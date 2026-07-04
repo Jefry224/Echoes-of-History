@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Character } from "@/lib/characters";
-import { Sparkles, CheckCircle, XCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Sparkles, CheckCircle, XCircle, ArrowLeft, Loader2, Mail, Download } from "lucide-react";
 
 interface RewardsPanelProps {
   character: Character;
@@ -15,6 +15,10 @@ export function RewardsPanel({ character, score, passed, transcript, onDone }: R
   const [userName, setUserName] = useState(() => {
     return localStorage.getItem("echoes_user_name") || "Investigador";
   });
+  const [userEmail, setUserEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const cachedMarkdown = useRef<string>("");
   const [voicePlayed, setVoicePlayed] = useState(false);
 
   // Play ElevenLabs simulated congratulations audio on mount
@@ -34,58 +38,89 @@ export function RewardsPanel({ character, score, passed, transcript, onDone }: R
     }
   }, [passed, character, userName, voicePlayed]);
 
-  // Export Flashcards via simulated n8n webhook and local download
-  const handleExportFlashcards = async () => {
-    setExporting(true);
-
-    // Format transcript into strict Markdown flashcards (Anki/Obsidian format)
-    let markdownContent = `# Tarjetas de Memoria - ${character.name}\n\n`;
-    markdownContent += `**Fecha:** ${new Date().toLocaleDateString()}\n`;
-    markdownContent += `**Evaluación:** ${passed ? "Aprobado" : "Participación"}\n`;
-    markdownContent += `**Puntaje:** ${score}%\n\n`;
-    markdownContent += `---\n\n`;
+  const buildLocalMarkdown = () => {
+    let md = `# Tarjetas de Memoria - ${character.name}\n\n`;
+    md += `**Fecha:** ${new Date().toLocaleDateString()}\n`;
+    md += `**Evaluación:** ${passed ? "Aprobado" : "Participación"}\n`;
+    md += `**Puntaje:** ${score}%\n\n---\n\n`;
 
     const userTurns = transcript.filter((t) => t.role === "user");
     const assistantTurns = transcript.filter((t) => t.role === "assistant");
 
     for (let i = 0; i < Math.min(userTurns.length, assistantTurns.length); i++) {
-      markdownContent += `## Q: ¿Qué discutimos sobre: ${userTurns[i].content}?\n`;
-      markdownContent += `A: ${assistantTurns[i].content}\n\n`;
-      markdownContent += `<!-- Card Divider -->\n\n`;
+      md += `## Q: ¿Qué discutimos sobre: ${userTurns[i].content}?\n`;
+      md += `A: ${assistantTurns[i].content}\n\n<!-- Card Divider -->\n\n`;
     }
 
     if (userTurns.length === 0) {
-      markdownContent += `## Q: ¿Cuál es el núcleo del pensamiento de ${character.name}?\n`;
-      markdownContent += `A: ${character.greeting}\n\n`;
+      md += `## Q: ¿Cuál es el núcleo del pensamiento de ${character.name}?\n`;
+      md += `A: ${character.greeting}\n\n`;
     }
 
+    return md;
+  };
+
+  const triggerDownload = (markdown: string) => {
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Flashcards_${character.id}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportFlashcards = async () => {
+    setEmailError("");
+
+    if (!userEmail.trim() || !userEmail.includes("@")) {
+      setEmailError("Ingresa un correo válido para continuar.");
+      return;
+    }
+
+    setExporting(true);
+    const localMarkdown = buildLocalMarkdown();
+    cachedMarkdown.current = localMarkdown;
+
     try {
-      await fetch("https://primary-production-bfd4.up.railway.app/webhook/echoes-flashcards", {
+      const res = await fetch("https://primary-production-bfd4.up.railway.app/webhook/echoes-flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userName,
+          email: userEmail.trim(),
           character: character.name,
           score,
           passed,
-          markdown: markdownContent,
-          transcript
-        })
-      }).catch(() => {});
-    } catch (e) {}
+          transcript,
+          localMarkdown,
+        }),
+      });
 
-    // Direct download of the Markdown file
-    setTimeout(() => {
-      const blob = new Blob([markdownContent], { type: "text/markdown;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `Flashcards_${character.id}.md`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      let finalMarkdown = localMarkdown;
+
+      if (res.ok) {
+        try {
+          const data = await res.json();
+          if (data?.markdown) {
+            finalMarkdown = data.markdown;
+            cachedMarkdown.current = finalMarkdown;
+          }
+        } catch {
+          // response not JSON — use local fallback
+        }
+        setEmailSent(true);
+      }
+
+      triggerDownload(finalMarkdown);
+    } catch {
+      // network error — still download local version
+      triggerDownload(localMarkdown);
+    } finally {
       setExporting(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -217,30 +252,98 @@ export function RewardsPanel({ character, score, passed, transcript, onDone }: R
           </div>
         </div>
 
-        {/* 
-          AUTOMATION BUTTON (Dark themed)
-        */}
-        <div className="flex flex-col items-center gap-4 pt-6">
-          <button
-            onClick={handleExportFlashcards}
-            disabled={exporting}
-            className="group flex h-14 items-center justify-center gap-3 rounded-full bg-white text-black hover:bg-neutral-200 border border-white px-10 text-base font-black uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer shadow-lg"
-          >
-            {exporting ? (
-              <>
-                <Loader2 className="size-5 animate-spin" />
-                Exportando...
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-5 fill-current animate-pulse" />
-                Exportar mis aprendizajes a Obsidian / Anki
-              </>
-            )}
-          </button>
-          <span className="text-[10px] font-mono text-neutral-500 tracking-wide uppercase font-bold">
-            Integración lista para API de Flashcards
-          </span>
+        {/* EMAIL + EXPORT */}
+        <div className="flex flex-col items-center gap-4 pt-6 w-full max-w-md">
+
+          {!emailSent ? (
+            <>
+              {/* Email input */}
+              <div className="w-full flex flex-col gap-1">
+                <label
+                  htmlFor="export-email"
+                  className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 font-bold"
+                >
+                  Correo para recibir las flashcards
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-500 pointer-events-none" />
+                  <input
+                    id="export-email"
+                    type="email"
+                    placeholder="tu@correo.com"
+                    value={userEmail}
+                    onChange={(e) => {
+                      setUserEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleExportFlashcards();
+                    }}
+                    aria-label="Correo electrónico de destino"
+                    aria-describedby={emailError ? "email-error" : undefined}
+                    className="w-full rounded-xl border border-neutral-700 bg-neutral-900 pl-9 pr-4 py-3 text-sm text-white placeholder:text-neutral-600 font-mono focus:outline-none focus:border-neutral-400 transition-colors"
+                  />
+                </div>
+                {emailError && (
+                  <p id="email-error" role="alert" className="text-[11px] text-red-400 font-mono mt-1">
+                    {emailError}
+                  </p>
+                )}
+              </div>
+
+              {/* Export button */}
+              <button
+                onClick={handleExportFlashcards}
+                disabled={exporting}
+                aria-busy={exporting}
+                className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-white text-black hover:bg-neutral-200 border border-white px-10 text-base font-black uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 cursor-pointer shadow-lg"
+              >
+                {exporting ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" />
+                    Analizando con Codex...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-5 fill-current animate-pulse" />
+                    Exportar mis aprendizajes a Obsidian / Anki
+                  </>
+                )}
+              </button>
+
+              <span className="text-[10px] font-mono text-neutral-500 tracking-wide uppercase font-bold">
+                Codex · n8n · Envío automático por correo
+              </span>
+            </>
+          ) : (
+            /* Post-send confirmation */
+            <div className="flex flex-col items-center gap-4 w-full">
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex flex-col items-center gap-2 rounded-2xl border border-neutral-700 bg-neutral-900/80 px-8 py-6 w-full text-center"
+              >
+                <CheckCircle className="size-10 text-white animate-bounce" />
+                <p className="text-sm font-black uppercase tracking-wide text-white">
+                  ¡Flashcards enviadas!
+                </p>
+                <p className="text-xs font-mono text-neutral-400">
+                  Revisa tu bandeja en{" "}
+                  <span className="text-neutral-200 font-bold">{userEmail}</span>
+                </p>
+              </div>
+
+              <button
+                onClick={() => triggerDownload(cachedMarkdown.current || buildLocalMarkdown())}
+                aria-label="Descargar archivo de flashcards nuevamente"
+                className="flex items-center gap-2 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <Download className="size-4" />
+                Descargar de nuevo
+              </button>
+            </div>
+          )}
+
         </div>
 
       </div>
