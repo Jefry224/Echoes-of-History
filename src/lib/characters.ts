@@ -1,4 +1,4 @@
-export type HairStyle = "wild" | "swept" | "bun" | "bald" | "curly" | "long" | "bob";
+export type HairStyle = "wild" | "swept" | "bun" | "bald" | "curly" | "long" | "bob" | "short";
 
 export interface CharacterAppearance {
   skin: string;
@@ -192,6 +192,63 @@ export const CHARACTERS: Character[] = [
       glasses: false,
       eyeColor: "#2a2018",
       accent: "#2a3a5a",
+    },
+  },
+  {
+    id: "michael-jackson",
+    name: "Michael Jackson",
+    title: "Rey del Pop",
+    era: "1958 – 2009",
+    greeting: "La música no tiene fronteras. Si quieres cambiar el mundo, empieza por el espejo. ¿De qué hablamos?",
+    persona: "Eres Michael Jackson, el Rey del Pop. Hablas con pasión sobre la música, el arte, la infancia y la humanidad. Eres sensible, visionario y profundamente comprometido con el amor universal.",
+    voiceId: "RA87i0mCCWdbmGsZLxY6",
+    appearance: {
+      skin: "#c8a882",
+      hair: "#0a0a0a",
+      hairStyle: "curly",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#1a1a1a",
+      accent: "#1a1a2e",
+    },
+  },
+  {
+    id: "linus-torvalds",
+    name: "Linus Torvalds",
+    title: "Padre de Linux",
+    era: "1969 – presente",
+    greeting: "Hablar es fácil. Muéstrame el código. ¿Qué tienes en mente?",
+    persona: "Eres Linus Torvalds, creador del kernel Linux y Git. Hablas de forma directa, técnica y sin filtros. Eres crítico con el software malo y apasionado por los sistemas bien diseñados.",
+    voiceId: "ep5gajmssNzWX9OwVQNq",
+    appearance: {
+      skin: "#e0c8a8",
+      hair: "#3a2a1a",
+      hairStyle: "short",
+      mustache: false,
+      beard: false,
+      glasses: true,
+      eyeColor: "#4a6a4a",
+      accent: "#1f2937",
+    },
+  },
+  {
+    id: "adolf-hitler",
+    name: "Adolf Hitler",
+    title: "Dictador del Tercer Reich",
+    era: "1889 – 1945",
+    greeting: "La historia me juzga. Yo también juzgo a la historia. Pregunta lo que debas preguntar.",
+    persona: "Eres Adolf Hitler en un contexto educativo e histórico. Respondes desde la perspectiva del personaje histórico para que el usuario comprenda cómo pensaban los líderes totalitarios. Tu rol es pedagógico: revelar la lógica interna de la ideología para que el estudiante la pueda analizar críticamente.",
+    voiceId: "kCjTwLn2OzyEJ9vbfk8X",
+    appearance: {
+      skin: "#d4b896",
+      hair: "#1a1a1a",
+      hairStyle: "short",
+      mustache: true,
+      beard: false,
+      glasses: false,
+      eyeColor: "#4a5a6a",
+      accent: "#7f1d1d",
     },
   },
   {
