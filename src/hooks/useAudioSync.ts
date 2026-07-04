@@ -14,8 +14,13 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
   const micStreamRef = useRef<MediaStream | null>(null);
   const speakTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
+  const isCharacterSpeakingRef = useRef(isCharacterSpeaking);
 
-  // Request mic access and start volume monitoring
+  useEffect(() => {
+    isCharacterSpeakingRef.current = isCharacterSpeaking;
+  }, [isCharacterSpeaking]);
+
+  // Request mic access and start volume monitoring once
   useEffect(() => {
     let active = true;
 
@@ -67,7 +72,7 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
               // Intelligent Interruption: user speaks for >300ms while character speaks
               if (speakDuration > 300) {
                 setIsUserTalking(true);
-                if (isCharacterSpeaking) {
+                if (isCharacterSpeakingRef.current) {
                   onInterrupt(); // Interrupt the character
                 }
               }
@@ -99,7 +104,7 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
         audioContextRef.current.close();
       }
     };
-  }, [isCharacterSpeaking, onInterrupt]);
+  }, [onInterrupt]);
 
   return {
     micVolume,

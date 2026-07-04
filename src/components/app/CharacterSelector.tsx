@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CHARACTERS } from "@/lib/characters";
 import type { Character } from "@/lib/characters";
-import { Play, ArrowLeft, ShieldCheck, HelpCircle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, HelpCircle, PhoneCall, Trash2 } from "lucide-react";
 
 interface CharacterSelectorProps {
   onBack: () => void;
@@ -60,15 +60,60 @@ export function CharacterSelector({ onBack, onStart }: CharacterSelectorProps) {
   const [selectedChar, setSelectedChar] = useState<Character>(CHARACTERS[0]);
   const [mode, setMode] = useState<"casual" | "mission">("casual");
   const [selectedMissionIndex, setSelectedMissionIndex] = useState<number>(0);
+  const [calling, setCalling] = useState(false);
+
+  // After calling animation plays, transition to call
+  useEffect(() => {
+    if (!calling) return;
+    const t = setTimeout(() => {
+      const activeMissions = MISSION_OBJECTIVES[selectedChar.id] || [];
+      const missionText = mode === "mission" ? activeMissions[selectedMissionIndex] : undefined;
+      onStart(selectedChar, mode, missionText);
+    }, 2800);
+    return () => clearTimeout(t);
+  }, [calling]);
 
   const handleConfirm = () => {
-    const activeMissions = MISSION_OBJECTIVES[selectedChar.id] || [];
-    const missionText = mode === "mission" ? activeMissions[selectedMissionIndex] : undefined;
-    onStart(selectedChar, mode, missionText);
+    setCalling(true);
+  };
+
+  const clearChatHistory = (charId: string) => {
+    localStorage.removeItem(`echoes_chat_history_${charId}`);
+    localStorage.removeItem(`echoes_reputation_${charId}`);
   };
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 text-white select-none">
+
+      {/* === CALLING ANIMATION OVERLAY === */}
+      {calling && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+          {/* Animated rings */}
+          <div className="relative flex items-center justify-center mb-8">
+            {/* Pulse rings */}
+            <div className="absolute size-64 rounded-full border border-white/5 animate-ping" style={{ animationDuration: "1.5s" }} />
+            <div className="absolute size-52 rounded-full border border-white/10 animate-ping" style={{ animationDuration: "2s" }} />
+            <div className="absolute size-40 rounded-full border border-white/15 animate-ping" style={{ animationDuration: "2.5s" }} />
+            {/* Core icon */}
+            <div
+              className="relative flex size-24 items-center justify-center rounded-full border-2 border-white bg-white/5 backdrop-blur-md shadow-[0_0_60px_rgba(255,255,255,0.15)]"
+              style={{ borderColor: selectedChar.appearance.accent }}
+            >
+              <PhoneCall className="size-10 text-white animate-pulse" />
+            </div>
+          </div>
+          {/* Character info */}
+          <p className="text-neutral-400 text-xs font-mono uppercase tracking-widest mb-2">Conectando con</p>
+          <h2 className="text-3xl font-black uppercase tracking-tight text-white">{selectedChar.name}</h2>
+          <p className="text-sm text-neutral-500 font-mono mt-1">{selectedChar.title} &mdash; {selectedChar.era}</p>
+          {/* Animated loading dots */}
+          <div className="flex gap-2 mt-8">
+            <span className="size-2 rounded-full bg-white animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="size-2 rounded-full bg-white animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="size-2 rounded-full bg-white animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+        </div>
+      )}
       
       {/* Back to landing */}
       <button
@@ -98,6 +143,7 @@ export function CharacterSelector({ onBack, onStart }: CharacterSelectorProps) {
         <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
           {CHARACTERS.map((c) => {
             const isSelected = selectedChar.id === c.id;
+            const hasHistory = typeof window !== "undefined" && !!localStorage.getItem(`echoes_chat_history_${c.id}`);
             return (
               <button
                 key={c.id}
@@ -105,12 +151,27 @@ export function CharacterSelector({ onBack, onStart }: CharacterSelectorProps) {
                   setSelectedChar(c);
                   setSelectedMissionIndex(0);
                 }}
-                className={`flex flex-col items-start p-6 rounded-3xl border text-left transition-all duration-300 cursor-pointer ${
+                className={`relative flex flex-col items-start p-6 rounded-3xl border text-left transition-all duration-300 cursor-pointer ${
                   isSelected 
                     ? "border-white bg-white/5 shadow-md shadow-white/5" 
                     : "border-neutral-800 bg-black/60 hover:border-neutral-600 hover:bg-neutral-900/50"
                 }`}
               >
+                {/* Clear chat button (only if there's history) */}
+                {hasHistory && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearChatHistory(c.id);
+                      // Force re-render
+                      setSelectedChar({ ...c });
+                    }}
+                    title="Limpiar historial de chat"
+                    className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-neutral-800 hover:bg-red-900/60 hover:border-red-500 border border-neutral-700 text-neutral-400 hover:text-red-400 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
                 {/* Initial Ring indicator */}
                 <div 
                   className="size-10 rounded-full border-2 flex items-center justify-center text-base font-mono font-black mb-4"
@@ -124,6 +185,11 @@ export function CharacterSelector({ onBack, onStart }: CharacterSelectorProps) {
                 <p className="text-xs text-neutral-400 mt-3 font-sans line-clamp-2 leading-relaxed">
                   "{c.greeting}"
                 </p>
+                {hasHistory && (
+                  <span className="mt-2 text-[9px] font-mono text-neutral-500 uppercase tracking-wider">
+                    💬 Historial guardado
+                  </span>
+                )}
               </button>
             );
           })}
@@ -206,10 +272,11 @@ export function CharacterSelector({ onBack, onStart }: CharacterSelectorProps) {
           {/* Confirm Launcher CTA */}
           <button
             onClick={handleConfirm}
-            className="group flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-black hover:bg-transparent hover:text-white border border-white text-sm font-black uppercase transition-all duration-300 transform active:scale-95 cursor-pointer shadow-lg shadow-white/5 mt-auto"
+            disabled={calling}
+            className="group flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-black hover:bg-transparent hover:text-white border border-white text-sm font-black uppercase transition-all duration-300 transform active:scale-95 cursor-pointer shadow-lg shadow-white/5 mt-auto disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Play className="size-4 fill-current" />
-            Llamar a {selectedChar.name.split(" ")[0]}
+            <PhoneCall className="size-4" />
+            {calling ? "Conectando..." : `Llamar a ${selectedChar.name.split(" ")[0]}`}
           </button>
         </div>
 

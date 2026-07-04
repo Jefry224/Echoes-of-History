@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { VideoPuppet } from "./VideoPuppet";
-import { useVoiceConversation } from "@/hooks/useVoiceConversation";
+import { useVoiceConversation, type VoiceStatus } from "@/hooks/useVoiceConversation";
 import { useAudioSync } from "@/hooks/useAudioSync";
 import type { Character } from "@/lib/characters";
-import { ArrowLeft, Mic, Square, RotateCcw, Send, User, Sparkles, PhoneOff, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Mic, Square, RotateCcw, Send, User, Sparkles, PhoneOff, ShieldAlert, StopCircle, Trash2, Pause, Play } from "lucide-react";
 
 interface CallInterfaceProps {
   character: Character;
@@ -45,6 +45,7 @@ const STATUS_LABEL: Record<string, string> = {
   idle: "Escribe o mantén pulsado el micro para hablar",
   listening: "Escuchando tu voz...",
   thinking: "Reflexionando...",
+  preparing: "Preparando voz...",
   speaking: "Hablando...",
   error: "Error de audio. Intenta de nuevo.",
 };
@@ -59,6 +60,9 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
     stopListening, 
     submitTextQuestion, 
     interruptSpeech, 
+    pauseSpeech,
+    resumeSpeech,
+    isPaused,
     reset,
     reputation,
     emotion
@@ -100,8 +104,9 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
-  const isBusy = status === "thinking";
+  const isBusy = status === "thinking" || status === "preparing";
   const isListening = status === "listening";
+  const isPreparing = status === "preparing" as VoiceStatus;
 
   const handleSendText = () => {
     if (!textInput.trim() || isBusy || status === "speaking") return;
@@ -157,13 +162,29 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
             </span>
           </div>
 
-          <button
-            onClick={reset}
-            className="flex items-center justify-center p-2 rounded-full border border-neutral-800 bg-black/60 hover:bg-neutral-900 text-neutral-400 hover:text-white transition cursor-pointer"
-            title="Reiniciar chat"
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
+          {/* Header right area: Reset + Clear chat */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (confirm(`¿Limpiar todo el historial con ${character.name}?`)) {
+                  localStorage.removeItem(`echoes_chat_history_${character.id}`);
+                  localStorage.removeItem(`echoes_reputation_${character.id}`);
+                  reset();
+                }
+              }}
+              className="flex items-center justify-center p-2 rounded-full border border-neutral-800 bg-black/60 hover:bg-red-900/40 hover:border-red-700 text-neutral-400 hover:text-red-400 transition cursor-pointer"
+              title="Limpiar historial de chat"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+            <button
+              onClick={reset}
+              className="flex items-center justify-center p-2 rounded-full border border-neutral-800 bg-black/60 hover:bg-neutral-900 text-neutral-400 hover:text-white transition cursor-pointer"
+              title="Reiniciar chat"
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          </div>
         </div>
 
         {/* Chat Feed */}
@@ -234,7 +255,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
                 </div>
               ))}
 
-              {isBusy && (
+              {(isBusy || isPreparing) && (
                 <div className="flex gap-4 items-start justify-start">
                   <div 
                     className="flex size-8 shrink-0 items-center justify-center rounded-full border text-xs font-mono font-black animate-pulse"
@@ -242,10 +263,15 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
                   >
                     {character.name.charAt(0)}
                   </div>
-                  <div className="flex items-center gap-1.5 px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-sm">
-                    <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 px-4 py-3 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-sm">
+                      <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="size-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                    {status === "preparing" && (
+                      <span className="text-[9px] font-mono text-neutral-600 px-1">Generando audio...</span>
+                    )}
                   </div>
                 </div>
               )}
@@ -371,7 +397,31 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
           SLIDER DOCKING HANGUP BUTTON:
           - Replaced with a more elegant dark-themed pill button to match the minimalist UI.
         */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-4 pointer-events-auto">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-3 pointer-events-auto">
+          {/* Pause / Resume button - visible while speaking */}
+          {status === "speaking" && (
+            <button
+              onClick={isPaused ? resumeSpeech : pauseSpeech}
+              className="flex h-12 items-center justify-center gap-2 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-white border border-neutral-700 px-5 text-sm font-bold transition-all transform hover:-translate-y-1 active:translate-y-0 cursor-pointer shadow-lg backdrop-blur-md animate-fade-in"
+              title={isPaused ? "Reanudar" : "Pausar"}
+            >
+              {isPaused
+                ? <><Play className="size-4 text-green-400" /> REANUDAR</>
+                : <><Pause className="size-4 text-yellow-400" /> PAUSAR</>
+              }
+            </button>
+          )}
+          {/* Stop speaking button - only visible while speaking */}
+          {status === "speaking" && (
+            <button
+              onClick={interruptSpeech}
+              className="flex h-12 items-center justify-center gap-2 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-white border border-neutral-700 px-6 text-sm font-bold transition-all transform hover:-translate-y-1 active:translate-y-0 cursor-pointer shadow-lg backdrop-blur-md animate-fade-in"
+              title="Detener el habla"
+            >
+              <StopCircle className="size-4 text-orange-400" />
+              DETENER
+            </button>
+          )}
           <button
             onClick={handleFinishCall}
             className="group flex h-12 items-center justify-center gap-3 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-8 text-sm font-bold transition-all transform hover:-translate-y-1 active:translate-y-0 cursor-pointer shadow-lg backdrop-blur-md"

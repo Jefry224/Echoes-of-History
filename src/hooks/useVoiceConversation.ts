@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import type { Character } from "@/lib/characters";
 
-export type VoiceStatus = "idle" | "listening" | "thinking" | "speaking" | "error";
+export type VoiceStatus = "idle" | "listening" | "thinking" | "preparing" | "speaking" | "error";
 
 export interface ChatTurn {
   role: "user" | "assistant";
@@ -50,11 +50,34 @@ const SIMULATED_QUESTIONS = [
 
 export function useVoiceConversation(character: Character, mode: "casual" | "mission" = "casual", missionText?: string) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
-  const [messages, setMessages] = useState<ChatTurn[]>([]);
+  const [messages, setMessages] = useState<ChatTurn[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`echoes_chat_history_${character.id}`);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [speakingLevel, setSpeakingLevel] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [reputation, setReputation] = useState(50);
+  const [reputation, setReputation] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`echoes_reputation_${character.id}`);
+      return saved ? Number(saved) : 50;
+    }
+    return 50;
+  });
   const [emotion, setEmotion] = useState<"base" | "feliz" | "enojado" | "triste">("base");
+  // Text is held here until the audio is ready, then flushed into messages
+  const pendingMessageRef = useRef<string | null>(null);
+
+  // Persist messages and reputation to localStorage
+  useEffect(() => {
+    localStorage.setItem(`echoes_chat_history_${character.id}`, JSON.stringify(messages));
+  }, [messages, character.id]);
+
+  useEffect(() => {
+    localStorage.setItem(`echoes_reputation_${character.id}`, String(reputation));
+  }, [reputation, character.id]);
 
   const replyIndex = useRef(0);
   const questionIndex = useRef(0);
@@ -78,8 +101,11 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
   }, []);
 
   const simulateSpeech = useCallback((text: string) => {
-    setStatus("speaking");
-    setSpeakingLevel(0.7); // Instantly open mouth when character starts speaking!
+    // Mark as "preparing" – audio is being fetched, text not yet revealed
+    setStatus("preparing");
+    setSpeakingLevel(0);
+    // Store the pending text so we can flush it once audio is ready
+    pendingMessageRef.current = text;
     
     // Stop any existing audio
     if (audioRef.current) {
@@ -88,17 +114,31 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
       audioRef.current = null;
     }
     
-    const fallbackSpeech = (fallbackText: string) => {
-      // Animate mouth speaking level
-      let time = 0;
+    /** Flush pending text into the visible message list */
+    const revealText = () => {
+      if (pendingMessageRef.current !== null) {
+        const t = pendingMessageRef.current;
+        pendingMessageRef.current = null;
+        setMessages((prev) => [...prev, { role: "assistant", content: t }]);
+      }
+      setStatus("speaking");
+      setSpeakingLevel(0.7);
+    };
+
+    const startLipSync = () => {
       if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
-      
+      let time = 0;
       speakingIntervalRef.current = setInterval(() => {
         time += 0.12;
-        // High-amplitude, pronounced lipsync movements
         const val = 0.35 + Math.abs(Math.sin(time * 3.8)) * 0.45 + Math.random() * 0.15;
         setSpeakingLevel(Math.min(0.9, val));
       }, 45);
+    };
+
+    const fallbackSpeech = (fallbackText: string) => {
+      // Reveal text before the native TTS starts
+      revealText();
+      startLipSync();
 
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -156,16 +196,17 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audioRef.current = audio;
-        
-        audio.onplay = () => {
-          if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
-          let time = 0;
-          speakingIntervalRef.current = setInterval(() => {
-            time += 0.12;
-            const val = 0.35 + Math.abs(Math.sin(time * 3.8)) * 0.45 + Math.random() * 0.15;
-            setSpeakingLevel(Math.min(0.9, val));
-          }, 45);
+
+        const handleAudioReady = () => {
+          revealText();
+          startLipSync();
         };
+
+        if (audio.readyState >= 2) {
+          handleAudioReady();
+        } else {
+          audio.addEventListener("canplay", handleAudioReady, { once: true });
+        }
 
         audio.onended = () => {
           if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
@@ -217,10 +258,7 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
       const localDelta = Math.min(10, Math.max(-5, Math.floor(q.length / 8) - 4));
       setReputation((prev) => Math.min(100, Math.max(0, prev + localDelta)));
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: r },
-      ]);
+      // Do NOT add to messages yet — simulateSpeech will reveal text when audio starts
       simulateSpeech(r);
     };
 
@@ -295,10 +333,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
 
         setReputation((prev) => Math.min(100, Math.max(0, prev + delta)));
         setEmotion(targetEmotion as any);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: replyText },
-        ]);
+        // Do NOT add to messages yet — simulateSpeech will reveal text when audio starts
         simulateSpeech(replyText);
       })
       .catch((err) => {
@@ -430,6 +465,32 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
     setStatus("idle");
   }, []);
 
+  const pauseSpeech = useCallback(() => {
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+      if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+      setSpeakingLevel(0);
+      setStatus("speaking"); // keep as speaking so resume works
+    } else if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+      setSpeakingLevel(0);
+    }
+  }, []);
+
+  const resumeSpeech = useCallback(() => {
+    if (audioRef.current && audioRef.current.paused) {
+      audioRef.current.play().catch(() => {});
+    } else if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  }, []);
+
+  const isPaused =
+    (audioRef.current?.paused && status === "speaking") ||
+    (typeof window !== 'undefined' && window.speechSynthesis?.paused) ||
+    false;
+
   return {
     status,
     messages,
@@ -439,6 +500,9 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
     stopListening,
     submitTextQuestion,
     interruptSpeech,
+    pauseSpeech,
+    resumeSpeech,
+    isPaused,
     reset,
     reputation,
     emotion,
