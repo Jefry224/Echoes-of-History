@@ -30,7 +30,7 @@ export const CHARACTERS: Character[] = [
     era: "1879 – 1955",
     greeting: "Ah, un curioso más. La imaginación es más importante que el conocimiento. Pregúntame lo que quieras.",
     persona: "Eres Albert Einstein. Hablas con humildad juguetona, curiosidad infinita y metáforas simples para explicar ideas complejas.",
-    voiceId: "pNInz6obpgDQGcFmaJgB",
+    voiceId: "9ufCCWfdWbzaImloX43q",
     appearance: {
       skin: "#e8c9a8",
       hair: "#e8e4dc",
@@ -49,7 +49,7 @@ export const CHARACTERS: Character[] = [
     era: "69 – 30 a.C.",
     greeting: "Bienvenido a mi corte. Pocos llegan hasta aquí. Habla, y veremos si mereces mi tiempo.",
     persona: "Eres Cleopatra VII, última faraona de Egipto. Hablas con elegancia, astucia política y orgullo.",
-    voiceId: "21m00Tcm4TlvDq8ikWAM",
+    voiceId: "wvYC0IMnsZDRsppvEaNb",
     appearance: {
       skin: "#c99a6e",
       hair: "#1a1410",
@@ -68,7 +68,7 @@ export const CHARACTERS: Character[] = [
     era: "100 – 44 a.C.",
     greeting: "La suerte está echada. Habla, ciudadano. ¿Qué noticias traes de las fronteras de la República?",
     persona: "Eres Julio César. Hablas con autoridad absoluta, disciplina militar romana y la elocuencia de un cónsul victorioso.",
-    voiceId: "cesarVoice",
+    voiceId: "DTGwzA4YLrWB1FAT6Uas",
     appearance: {
       skin: "#e5bd9e",
       hair: "#b0b0b0",
@@ -87,7 +87,7 @@ export const CHARACTERS: Character[] = [
     era: "1769 – 1821",
     greeting: "La victoria pertenece al más perseverante. Dime, ¿qué estrategia traes hoy ante el Emperador?",
     persona: "Eres Napoleón Bonaparte. Hablas con una ambición imperial de hierro, precisión táctica y concisión pragmática.",
-    voiceId: "napoleonVoice",
+    voiceId: "GgV5QStPLpmkN7FOHJtY",
     appearance: {
       skin: "#dfbfa0",
       hair: "#362a1f",
@@ -125,7 +125,7 @@ export const CHARACTERS: Character[] = [
     era: "1452 – 1519",
     greeting: "El saber nunca satura la mente. Ven, dibujemos juntos las ideas del universo.",
     persona: "Eres Leonardo da Vinci, artista, ingeniero y anatomista. Hablas con asombro por la naturaleza, mezclando arte y ciencia.",
-    voiceId: "ErXwobaYiN019PkySvjV",
+    voiceId: "AZnmrjjEOG9CofMyOxaA",
     appearance: {
       skin: "#d9b48f",
       hair: "#b8a58c",
@@ -144,7 +144,7 @@ export const CHARACTERS: Character[] = [
     era: "1867 – 1934",
     greeting: "Nada en la vida debe ser temido, solo comprendido. ¿Qué deseas comprender hoy?",
     persona: "Eres Marie Curie, física y química, doble premio Nobel. Hablas con rigor, determinación tranquila y pasión por el descubrimiento.",
-    voiceId: "EXAVITQu4vr4xnSDxMaL",
+    voiceId: "PoHUWWWMHFrA8z7Q88pu",
     appearance: {
       skin: "#e3c4a8",
       hair: "#5a4632",
@@ -163,7 +163,7 @@ export const CHARACTERS: Character[] = [
     era: "1564 – 1616",
     greeting: "Ser, o no ser preguntado... esa es la cuestión. Adelante, buen visitor.",
     persona: "Eres William Shakespeare. Hablas con lirismo, ingenio y ocasionales versos.",
-    voiceId: "TxGEqnHWrfWFTfGW9XjX",
+    voiceId: "lUTamkMw7gOzZbFIwmq4",
     appearance: {
       skin: "#e0bd9a",
       hair: "#6b4a2a",
@@ -182,7 +182,7 @@ export const CHARACTERS: Character[] = [
     era: "1856 – 1943",
     greeting: "El presente es suyo; el futuro, por el que realmente trabajé, es mío. Conversemos.",
     persona: "Eres Nikola Tesla, inventor visionario. Hablas con intensidad, precisión y visión del futuro.",
-    voiceId: "VR6AewLTigWG4xSOukaG",
+    voiceId: "LlZr3QuzbW4WrPjgATHG",
     appearance: {
       skin: "#dcbb98",
       hair: "#241c14",
@@ -192,6 +192,25 @@ export const CHARACTERS: Character[] = [
       glasses: false,
       eyeColor: "#2a2018",
       accent: "#2a3a5a",
+    },
+  },
+  {
+    id: "messi",
+    name: "Lionel Messi",
+    title: "Campeón del fútbol",
+    era: "1987 – presente",
+    greeting: "¡Vamos! La pasión se escribe con trabajo y corazón. ¿Qué quieres hablar hoy?",
+    persona: "Eres Lionel Messi, futbolista legendario. Hablas con humildad, precisión, liderazgo y una gran conexión con el juego y la emoción.",
+    voiceId: "gOTHNwJSqEXuLGzTF3FR",
+    appearance: {
+      skin: "#d8b48a",
+      hair: "#241c14",
+      hairStyle: "swept",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#2d3b55",
+      accent: "#1d4ed8",
     },
   },
 ];

@@ -9,6 +9,7 @@ interface HeadMeshProps {
   liveliness?: number;
   targetPosition?: [number, number, number];
   targetScale?: number;
+  emotion?: "base" | "feliz" | "enojado" | "triste";
 }
 
 function HairTuft({
@@ -128,6 +129,7 @@ export function HeadMesh({
   liveliness = 1,
   targetPosition = [0, 0, 0],
   targetScale = 1.1,
+  emotion = "base",
 }: HeadMeshProps) {
   const group = useRef<THREE.Group>(null);
   const leftEye = useRef<THREE.Group>(null);
@@ -175,6 +177,33 @@ export function HeadMesh({
     [appearance.skin]
   );
 
+  // Dynamic eyebrow and eye styling based on emotion
+  const { leftEyebrowRotation, rightEyebrowRotation, eyebrowY, eyeScale } = useMemo(() => {
+    let leftEyebrowRotation: [number, number, number] = [0, 0, 0.1];
+    let rightEyebrowRotation: [number, number, number] = [0, 0, -0.1];
+    let eyebrowY = 0.36;
+    let eyeScale: [number, number, number] = [1, 1.15, 0.6];
+
+    if (emotion === "feliz") {
+      leftEyebrowRotation = [0, 0, 0.25];
+      rightEyebrowRotation = [0, 0, -0.25];
+      eyebrowY = 0.41;
+      eyeScale = [1.05, 1.25, 0.6];
+    } else if (emotion === "enojado") {
+      leftEyebrowRotation = [0.15, 0, -0.18];
+      rightEyebrowRotation = [0.15, 0, 0.18];
+      eyebrowY = 0.28;
+      eyeScale = [1, 0.85, 0.6]; // squint
+    } else if (emotion === "triste") {
+      leftEyebrowRotation = [0, 0, -0.16];
+      rightEyebrowRotation = [0, 0, 0.16];
+      eyebrowY = 0.39;
+      eyeScale = [1, 1.05, 0.6];
+    }
+
+    return { leftEyebrowRotation, rightEyebrowRotation, eyebrowY, eyeScale };
+  }, [emotion]);
+
   return (
     <group ref={group} scale={1.1}>
       {/* Craneo */}
@@ -201,7 +230,7 @@ export function HeadMesh({
 
       {/* Ojos */}
       <group ref={leftEye} position={[-0.28, 0.12, 0.82]}>
-        <mesh scale={[1, 1.15, 0.6]}>
+        <mesh scale={eyeScale}>
           <sphereGeometry args={[0.19, 20, 20]} />
           <meshStandardMaterial color="#f7f3ea" roughness={0.4} />
         </mesh>
@@ -215,7 +244,7 @@ export function HeadMesh({
         </mesh>
       </group>
       <group ref={rightEye} position={[0.28, 0.12, 0.82]}>
-        <mesh scale={[1, 1.15, 0.6]}>
+        <mesh scale={eyeScale}>
           <sphereGeometry args={[0.19, 20, 20]} />
           <meshStandardMaterial color="#f7f3ea" roughness={0.4} />
         </mesh>
@@ -230,11 +259,11 @@ export function HeadMesh({
       </group>
 
       {/* Cejas */}
-      <mesh position={[-0.28, 0.36, 0.86]} rotation={[0, 0, 0.1]}>
+      <mesh position={[-0.28, eyebrowY, 0.86]} rotation={leftEyebrowRotation}>
         <boxGeometry args={[0.28, 0.05, 0.08]} />
         <meshStandardMaterial color={appearance.hair} roughness={0.9} />
       </mesh>
-      <mesh position={[0.28, 0.36, 0.86]} rotation={[0, 0, -0.1]}>
+      <mesh position={[0.28, eyebrowY, 0.86]} rotation={rightEyebrowRotation}>
         <boxGeometry args={[0.28, 0.05, 0.08]} />
         <meshStandardMaterial color={appearance.hair} roughness={0.9} />
       </mesh>

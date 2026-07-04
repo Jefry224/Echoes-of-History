@@ -48,23 +48,32 @@ const SIMULATED_QUESTIONS = [
   "Cuéntame una lección de tu propia vida.",
 ];
 
-export function useVoiceConversation(character: Character) {
+export function useVoiceConversation(character: Character, mode: "casual" | "mission" = "casual", missionText?: string) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [speakingLevel, setSpeakingLevel] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [reputation, setReputation] = useState(50);
+  const [emotion, setEmotion] = useState<"base" | "feliz" | "enojado" | "triste">("base");
 
   const replyIndex = useRef(0);
   const questionIndex = useRef(0);
   const speakingIntervalRef = useRef<any>(null);
   const timeoutRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const submitTextQuestionRef = useRef<any>(null);
 
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
     };
   }, []);
 
@@ -188,35 +197,6 @@ export function useVoiceConversation(character: Character) {
     }
   }, [character.voiceId]);
 
-  const startListening = useCallback(() => {
-    setErrorMsg(null);
-    setStatus("listening");
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-  }, []);
-
-  const stopListening = useCallback(() => {
-    setStatus("thinking");
-
-    // Simulate STT -> LLM response after 1.5 seconds
-    timeoutRef.current = setTimeout(() => {
-      // Pick a question and a reply
-      const q = SIMULATED_QUESTIONS[questionIndex.current];
-      questionIndex.current = (questionIndex.current + 1) % SIMULATED_QUESTIONS.length;
-
-      const characterReplies = SIMULATED_REPLIES[character.id] || [character.greeting];
-      const r = characterReplies[replyIndex.current];
-      replyIndex.current = (replyIndex.current + 1) % characterReplies.length;
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", content: q },
-        { role: "assistant", content: r },
-      ]);
-
-      simulateSpeech(r);
-    }, 1500);
-  }, [character, simulateSpeech]);
-
   const submitTextQuestion = useCallback((q: string) => {
     if (!q.trim()) return;
     setStatus("thinking");
@@ -226,20 +206,196 @@ export function useVoiceConversation(character: Character) {
       { role: "user", content: q },
     ]);
 
-    // Simulate LLM response after 1.2 seconds
-    timeoutRef.current = setTimeout(() => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+    const triggerLocalFallback = () => {
       const characterReplies = SIMULATED_REPLIES[character.id] || [character.greeting];
       const r = characterReplies[replyIndex.current];
       replyIndex.current = (replyIndex.current + 1) % characterReplies.length;
+
+      // Simulated delta for fallback
+      const localDelta = Math.min(10, Math.max(-5, Math.floor(q.length / 8) - 4));
+      setReputation((prev) => Math.min(100, Math.max(0, prev + localDelta)));
 
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: r },
       ]);
-
       simulateSpeech(r);
-    }, 1200);
-  }, [character, simulateSpeech]);
+    };
+
+    if (apiKey) {
+      let systemPrompt = `Eres el personaje histórico: ${character.name}. ${character.persona}
+
+Debes responder siempre manteniendo tu personalidad histórica, vocabulario adecuado de tu época y en idioma Español.
+Mantén tus respuestas ricas en contenido histórico (de 3 a 5 oraciones largas), para que den suficiente detalle y no sean demasiado cortas.
+Refleja tu estado emocional a través de la puntuación en el texto para que la voz de ElevenLabs responda con la entonación adecuada (por ejemplo, usando "¡!" para alegría, pausas y puntos suspensivos para tristeza, u oraciones firmes y fuertes para enojo).
+
+`;
+
+      if (mode === "mission" && missionText) {
+        systemPrompt += `MODO RETO ACTIVO:
+El usuario está intentando cumplir la siguiente misión histórica contigo: "${missionText}".
+Evalúa la calidad de su argumento, su sustento histórico, coherencia y poder de convicción.
+Este convencimiento debe ser dinámico y no plano:
+- Si el usuario plantea un argumento excelente, astuto, convincente e históricamente fundamentado, devuelve un delta positivo alto (ej. +15 a +30).
+- Si el usuario hace preguntas o aportes neutrales o promedio, otorga un delta bajo (ej. 0 o +2).
+- Si hace argumentos débiles, ilógicos o incoherentes, devuelve un delta negativo (ej. -10 a -20).
+
+`;
+      } else {
+        systemPrompt += `MODO CASUAL ACTIVO:
+Estás conversando amigablemente. La reputación no varía de manera crítica en este modo (debe ser 0 o muy cercana a 0 en la mayoría de los casos).
+
+`;
+      }
+
+      systemPrompt += `DEBES RESPONDER EXCLUSIVAMENTE EN FORMATO JSON con la siguiente estructura:
+{
+  "response_text": "Tu respuesta en personaje aquí",
+  "reputation_delta": número entero entre -30 y 30,
+  "emotion": "base" | "feliz" | "enojado" | "triste" (elige la emoción que mejor represente tu reacción a este turno)
+}
+
+No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el objeto JSON de forma cruda.`;
+
+      const chatHistory = messages.map((m) => ({
+        role: m.role === "user" ? "user" : "assistant" as "user" | "assistant",
+        content: m.content,
+      }));
+
+      fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...chatHistory,
+            { role: "user", content: q }
+          ],
+        }),
+      })
+      .then((res) => {
+        if (!res.ok) throw new Error("OpenAI request failed");
+        return res.json();
+      })
+      .then((data) => {
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) throw new Error("Empty content from OpenAI");
+
+        const parsed = JSON.parse(content);
+        const replyText = parsed.response_text || "Disculpa, no logré entenderte.";
+        const delta = Number(parsed.reputation_delta) || 0;
+        const targetEmotion = parsed.emotion || "base";
+
+        setReputation((prev) => Math.min(100, Math.max(0, prev + delta)));
+        setEmotion(targetEmotion as any);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: replyText },
+        ]);
+        simulateSpeech(replyText);
+      })
+      .catch((err) => {
+        console.error("OpenAI Error, falling back:", err);
+        triggerLocalFallback();
+      });
+    } else {
+      triggerLocalFallback();
+    }
+  }, [character, messages, mode, missionText, simulateSpeech]);
+
+  useEffect(() => {
+    submitTextQuestionRef.current = submitTextQuestion;
+  }, [submitTextQuestion]);
+
+  // Setup Web Speech API Speech Recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition();
+        rec.lang = "es-ES";
+        rec.continuous = false;
+        rec.interimResults = false;
+
+        rec.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          console.log("Speech recognition transcript:", transcript);
+          if (submitTextQuestionRef.current) {
+            submitTextQuestionRef.current(transcript);
+          }
+        };
+
+        rec.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error !== "no-speech") {
+            setErrorMsg("No se pudo reconocer tu voz. Intenta escribir.");
+            setStatus("idle");
+          } else {
+            setStatus("idle");
+          }
+        };
+
+        rec.onend = () => {
+          setStatus((prev) => (prev === "listening" ? "idle" : prev));
+        };
+
+        recognitionRef.current = rec;
+      }
+    }
+  }, []);
+
+  const startListening = useCallback(() => {
+    setErrorMsg(null);
+    setStatus("listening");
+    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    if (speakingIntervalRef.current) {
+      clearInterval(speakingIntervalRef.current);
+      speakingIntervalRef.current = null;
+    }
+    setSpeakingLevel(0);
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Failed to start SpeechRecognition:", e);
+      }
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        setStatus("thinking");
+      } catch (e) {
+        console.error("Failed to stop SpeechRecognition:", e);
+        setStatus("idle");
+      }
+    } else {
+      // Fallback if SpeechRecognition is not supported
+      setStatus("thinking");
+      timeoutRef.current = setTimeout(() => {
+        const q = SIMULATED_QUESTIONS[questionIndex.current];
+        questionIndex.current = (questionIndex.current + 1) % SIMULATED_QUESTIONS.length;
+        if (submitTextQuestionRef.current) {
+          submitTextQuestionRef.current(q);
+        }
+      }, 1500);
+    }
+  }, []);
 
   const reset = useCallback(() => {
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
@@ -255,6 +411,8 @@ export function useVoiceConversation(character: Character) {
     setSpeakingLevel(0);
     setErrorMsg(null);
     setStatus("idle");
+    setReputation(50);
+    setEmotion("base");
   }, []);
 
   const interruptSpeech = useCallback(() => {
@@ -282,5 +440,7 @@ export function useVoiceConversation(character: Character) {
     submitTextQuestion,
     interruptSpeech,
     reset,
+    reputation,
+    emotion,
   };
 }

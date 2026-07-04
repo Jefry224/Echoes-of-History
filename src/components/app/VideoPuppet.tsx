@@ -5,9 +5,10 @@ interface VideoPuppetProps {
   character: Character;
   isSpeaking: boolean;
   speakingLevel: number;
+  emotion?: "base" | "feliz" | "enojado" | "triste";
 }
 
-export function VideoPuppet({ character, isSpeaking, speakingLevel }: VideoPuppetProps) {
+export function VideoPuppet({ character, isSpeaking, speakingLevel, emotion = "base" }: VideoPuppetProps) {
   // Video paths based on character id
   const listeningVideoSrc = `/assets/videos/${character.id}_escuchando.mp4`;
   const speakingVideoSrc = `/assets/videos/${character.id}_hablando.mp4`;
@@ -52,6 +53,7 @@ export function VideoPuppet({ character, isSpeaking, speakingLevel }: VideoPuppe
           className="h-full w-full"
           float
           cameraZ={4.8}
+          emotion={emotion}
         />
       </div>
 

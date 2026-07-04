@@ -14,6 +14,7 @@ interface HeadSceneProps {
   frameloop?: "always" | "demand";
   targetPosition?: [number, number, number];
   targetScale?: number;
+  emotion?: "base" | "feliz" | "enojado" | "triste";
 }
 
 export function HeadScene({
@@ -26,8 +27,18 @@ export function HeadScene({
   frameloop = "always",
   targetPosition = [0, 0, 0],
   targetScale = 1.1,
+  emotion = "base",
 }: HeadSceneProps) {
   const high = quality === "high";
+
+  // Dynamic light color based on emotion
+  const spotLightColor = (() => {
+    if (emotion === "feliz") return "#fff2cc"; // warm golden yellow
+    if (emotion === "enojado") return "#ffcccc"; // intense red-white
+    if (emotion === "triste") return "#ccd9ff"; // cool blue-white
+    return "#ffd9a0"; // base warm peach
+  })();
+
   return (
     <div className={className}>
       <Canvas
@@ -45,7 +56,7 @@ export function HeadScene({
             angle={0.4}
             penumbra={0.8}
             intensity={2.4}
-            color="#ffd9a0"
+            color={spotLightColor}
             castShadow={high}
           />
           <pointLight position={[-4, 1, 3]} intensity={0.9} color="#c97a3a" />
@@ -54,10 +65,10 @@ export function HeadScene({
 
           {float ? (
             <Float speed={2} rotationIntensity={0.25} floatIntensity={0.6}>
-              <HeadMesh appearance={appearance} speaking={speaking} targetPosition={targetPosition} targetScale={targetScale} />
+              <HeadMesh appearance={appearance} speaking={speaking} emotion={emotion} targetPosition={targetPosition} targetScale={targetScale} />
             </Float>
           ) : (
-            <HeadMesh appearance={appearance} speaking={speaking} targetPosition={targetPosition} targetScale={targetScale} />
+            <HeadMesh appearance={appearance} speaking={speaking} emotion={emotion} targetPosition={targetPosition} targetScale={targetScale} />
           )}
 
           {high && (

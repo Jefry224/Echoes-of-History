@@ -59,8 +59,10 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
     stopListening, 
     submitTextQuestion, 
     interruptSpeech, 
-    reset 
-  } = useVoiceConversation(character);
+    reset,
+    reputation,
+    emotion
+  } = useVoiceConversation(character, mode, missionText);
 
   // Hook up Web Audio VAD monitoring & Intelligent Interruption
   const { micVolume } = useAudioSync({
@@ -69,7 +71,6 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
   });
 
   const [textInput, setTextInput] = useState("");
-  const [reputation, setReputation] = useState(50); // range 0 to 100
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes countdown (300 seconds)
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -93,17 +94,6 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [mode]);
-
-  // Adjust persuasion meter as conversation proceeds
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const userMessages = messages.filter((m) => m.role === "user");
-    if (userMessages.length === 0) return;
-    
-    const lastMsgLen = userMessages[userMessages.length - 1].content.length;
-    const diff = Math.min(12, Math.max(-5, Math.floor(lastMsgLen / 8) - 4));
-    setReputation((prev) => Math.min(100, Math.max(0, prev + diff)));
-  }, [messages]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -339,6 +329,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
             character={character} 
             isSpeaking={status === "speaking"} 
             speakingLevel={speakingLevel} 
+            emotion={emotion}
           />
         </div>
 
