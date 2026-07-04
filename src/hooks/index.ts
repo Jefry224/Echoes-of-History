@@ -81,3 +81,8 @@ export function useWindowSize() {
 
   return size;
 }
+
+export { useAudioSync } from './useAudioSync';
+export { useVoiceConversation } from './useVoiceConversation';
+
+
