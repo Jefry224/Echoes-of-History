@@ -1,0 +1,203 @@
+export type HairStyle = "wild" | "swept" | "bun" | "bald" | "curly" | "long" | "bob";
+
+export interface CharacterAppearance {
+  skin: string;
+  hair: string;
+  hairStyle: HairStyle;
+  mustache: boolean;
+  beard: boolean;
+  glasses: boolean;
+  eyeColor: string;
+  accent: string; // Accent color / clothes
+}
+
+export interface Character {
+  id: string;
+  name: string;
+  title: string;
+  era: string;
+  greeting: string;
+  persona: string;
+  voiceId: string;
+  appearance: CharacterAppearance;
+}
+
+export const CHARACTERS: Character[] = [
+  {
+    id: "einstein",
+    name: "Albert Einstein",
+    title: "Físico teórico",
+    era: "1879 – 1955",
+    greeting: "Ah, un curioso más. La imaginación es más importante que el conocimiento. Pregúntame lo que quieras.",
+    persona: "Eres Albert Einstein. Hablas con humildad juguetona, curiosidad infinita y metáforas simples para explicar ideas complejas.",
+    voiceId: "pNInz6obpgDQGcFmaJgB",
+    appearance: {
+      skin: "#e8c9a8",
+      hair: "#e8e4dc",
+      hairStyle: "wild",
+      mustache: true,
+      beard: false,
+      glasses: false,
+      eyeColor: "#4a3520",
+      accent: "#7a6a52",
+    },
+  },
+  {
+    id: "cleopatra",
+    name: "Cleopatra VII",
+    title: "Reina de Egipto",
+    era: "69 – 30 a.C.",
+    greeting: "Bienvenido a mi corte. Pocos llegan hasta aquí. Habla, y veremos si mereces mi tiempo.",
+    persona: "Eres Cleopatra VII, última faraona de Egipto. Hablas con elegancia, astucia política y orgullo.",
+    voiceId: "21m00Tcm4TlvDq8ikWAM",
+    appearance: {
+      skin: "#c99a6e",
+      hair: "#1a1410",
+      hairStyle: "long",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#2a1c10",
+      accent: "#c9a227",
+    },
+  },
+  {
+    id: "cesar",
+    name: "Julio César",
+    title: "Dictador de Roma",
+    era: "100 – 44 a.C.",
+    greeting: "La suerte está echada. Habla, ciudadano. ¿Qué noticias traes de las fronteras de la República?",
+    persona: "Eres Julio César. Hablas con autoridad absoluta, disciplina militar romana y la elocuencia de un cónsul victorioso.",
+    voiceId: "cesarVoice",
+    appearance: {
+      skin: "#e5bd9e",
+      hair: "#b0b0b0",
+      hairStyle: "bald",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#2b3d2b",
+      accent: "#b91c1c",
+    },
+  },
+  {
+    id: "napoleon",
+    name: "Napoleón Bonaparte",
+    title: "Emperador de Francia",
+    era: "1769 – 1821",
+    greeting: "La victoria pertenece al más perseverante. Dime, ¿qué estrategia traes hoy ante el Emperador?",
+    persona: "Eres Napoleón Bonaparte. Hablas con una ambición imperial de hierro, precisión táctica y concisión pragmática.",
+    voiceId: "napoleonVoice",
+    appearance: {
+      skin: "#dfbfa0",
+      hair: "#362a1f",
+      hairStyle: "swept",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#1f2d3d",
+      accent: "#1e3a8a",
+    },
+  },
+  {
+    id: "jesus",
+    name: "Jesús de Nazaret",
+    title: "Líder espiritual",
+    era: "4 a.C. – 30 d.C.",
+    greeting: "La paz sea con vosotros. ¿Qué buscas en tu corazón el día de hoy?",
+    persona: "Eres Jesús de Nazaret. Hablas con mansedumbre profunda, utilizando parábolas de amor, compasión, sabiduría espiritual y calma absoluta.",
+    voiceId: "HNSF1CTQmub252yhXROX",
+    appearance: {
+      skin: "#dfbfa0",
+      hair: "#5c4033",
+      hairStyle: "long",
+      mustache: true,
+      beard: true,
+      glasses: false,
+      eyeColor: "#4a3c31",
+      accent: "#b5a48c",
+    },
+  },
+  {
+    id: "davinci",
+    name: "Leonardo da Vinci",
+    title: "Genio del Renacimiento",
+    era: "1452 – 1519",
+    greeting: "El saber nunca satura la mente. Ven, dibujemos juntos las ideas del universo.",
+    persona: "Eres Leonardo da Vinci, artista, ingeniero y anatomista. Hablas con asombro por la naturaleza, mezclando arte y ciencia.",
+    voiceId: "ErXwobaYiN019PkySvjV",
+    appearance: {
+      skin: "#d9b48f",
+      hair: "#b8a58c",
+      hairStyle: "long",
+      mustache: true,
+      beard: true,
+      glasses: false,
+      eyeColor: "#3a2c1a",
+      accent: "#6b4f2a",
+    },
+  },
+  {
+    id: "curie",
+    name: "Marie Curie",
+    title: "Pionera de la radiactividad",
+    era: "1867 – 1934",
+    greeting: "Nada en la vida debe ser temido, solo comprendido. ¿Qué deseas comprender hoy?",
+    persona: "Eres Marie Curie, física y química, doble premio Nobel. Hablas con rigor, determinación tranquila y pasión por el descubrimiento.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+    appearance: {
+      skin: "#e3c4a8",
+      hair: "#5a4632",
+      hairStyle: "bun",
+      mustache: false,
+      beard: false,
+      glasses: false,
+      eyeColor: "#4a3a28",
+      accent: "#3a4a3a",
+    },
+  },
+  {
+    id: "shakespeare",
+    name: "William Shakespeare",
+    title: "El Bardo de Avon",
+    era: "1564 – 1616",
+    greeting: "Ser, o no ser preguntado... esa es la cuestión. Adelante, buen visitor.",
+    persona: "Eres William Shakespeare. Hablas con lirismo, ingenio y ocasionales versos.",
+    voiceId: "TxGEqnHWrfWFTfGW9XjX",
+    appearance: {
+      skin: "#e0bd9a",
+      hair: "#6b4a2a",
+      hairStyle: "swept",
+      mustache: true,
+      beard: true,
+      glasses: false,
+      eyeColor: "#3a2818",
+      accent: "#5a2a3a",
+    },
+  },
+  {
+    id: "tesla",
+    name: "Nikola Tesla",
+    title: "Maestro de la electricidad",
+    era: "1856 – 1943",
+    greeting: "El presente es suyo; el futuro, por el que realmente trabajé, es mío. Conversemos.",
+    persona: "Eres Nikola Tesla, inventor visionario. Hablas con intensidad, precisión y visión del futuro.",
+    voiceId: "VR6AewLTigWG4xSOukaG",
+    appearance: {
+      skin: "#dcbb98",
+      hair: "#241c14",
+      hairStyle: "swept",
+      mustache: true,
+      beard: false,
+      glasses: false,
+      eyeColor: "#2a2018",
+      accent: "#2a3a5a",
+    },
+  },
+];
+
+export function getCharacter(id: string): Character | undefined {
+  return CHARACTERS.find((c) => c.id === id);
+}
+
+export const EINSTEIN = CHARACTERS[0];
