@@ -60,11 +60,19 @@ const WHISPER_HALLUCINATIONS = [
   "like y suscríbete",
 ];
 
-export function useVoiceConversation(character: Character, mode: "casual" | "mission" = "casual", missionText?: string) {
+export function useVoiceConversation(
+  character: Character, 
+  mode: "casual" | "mission" = "casual", 
+  missionText?: string,
+  missionDifficulty: "fácil" | "media" | "difícil" = "fácil"
+) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [messages, setMessages] = useState<ChatTurn[]>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`echoes_chat_history_${character.id}`);
+      const historyKey = mode === "mission" 
+        ? `echoes_chat_history_mission_${character.id}` 
+        : `echoes_chat_history_casual_${character.id}`;
+      const saved = localStorage.getItem(historyKey);
       return saved ? JSON.parse(saved) : [];
     }
     return [];
@@ -73,7 +81,10 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [reputation, setReputation] = useState<number>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`echoes_reputation_${character.id}`);
+      const reputationKey = mode === "mission" 
+        ? `echoes_reputation_mission_${character.id}` 
+        : `echoes_reputation_casual_${character.id}`;
+      const saved = localStorage.getItem(reputationKey);
       return saved ? Number(saved) : 50;
     }
     return 50;
@@ -97,12 +108,18 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
 
   // Persist messages and reputation to localStorage
   useEffect(() => {
-    localStorage.setItem(`echoes_chat_history_${character.id}`, JSON.stringify(messages));
-  }, [messages, character.id]);
+    const historyKey = mode === "mission" 
+      ? `echoes_chat_history_mission_${character.id}` 
+      : `echoes_chat_history_casual_${character.id}`;
+    localStorage.setItem(historyKey, JSON.stringify(messages));
+  }, [messages, character.id, mode]);
 
   useEffect(() => {
-    localStorage.setItem(`echoes_reputation_${character.id}`, String(reputation));
-  }, [reputation, character.id]);
+    const reputationKey = mode === "mission" 
+      ? `echoes_reputation_mission_${character.id}` 
+      : `echoes_reputation_casual_${character.id}`;
+    localStorage.setItem(reputationKey, String(reputation));
+  }, [reputation, character.id, mode]);
 
   const cleanupMediaStream = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -322,6 +339,21 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
       return;
     }
 
+    const difficultyConfig = {
+      fácil: {
+        stubbornness: "Eres bastante amigable y receptivo. Si el usuario te plantea una idea razonable o lógica, cede con facilidad, felicítalo y muéstrate convencido rápidamente.",
+        scoring: "Criterio de evaluación amigable: Recompensa al usuario de forma generosa. Por cada argumento coherente o amigable, otórgale un delta de reputación positivo alto (ej. +20 a +35). Permite que se te convenza en 2 o 3 mensajes."
+      },
+      media: {
+        stubbornness: "Eres moderadamente escéptico. Defiende tus ideas con argumentos lógicos de tu época, pero si el usuario plantea una buena analogía, datos de peso o un argumento bien estructurado, ve cediendo poco a poco y muéstrate convencido a mitad del debate.",
+        scoring: "Criterio de evaluación de reputación moderado: Otorga incrementos de reputación medianos (ej. +10 a +20) por buenos argumentos. Si el usuario no es del todo convincente u ofrece respuestas neutrales, no aumentes reputación (delta de 0 a +5)."
+      },
+      difícil: {
+        stubbornness: "Firmeza Histórica y Resistencia (Llevar la contraria hasta el final): Debes defender tu postura histórica con gran firmeza y escepticismo obstinado. No cedas ante los argumentos del usuario con facilidad. Rebate cada punto que plantee, busca contradicciones o debilidades en sus argumentos y presenta contraargumentos históricos sólidos. Solo debes convencerte por completo y aceptar su postura cuando la conversación haya progresado al máximo (reputación al 100%).",
+        scoring: "Criterio de evaluación de reputación riguroso y gradual: Otorga incrementos pequeños de reputación (\"reputation_delta\") de +5 a +15 únicamente por argumentos excelentes, lógicos y muy bien fundados en hechos históricos. Si el argumento es regular o neutral, no aumentes de forma significativa la reputación (delta de 0 o de +1 a +4). Si hace aportaciones totalmente ilógicas, anacrónicas o incoherentes, refútalas fuertemente y reduce la reputación (delta de -10 a -25)."
+      }
+    }[missionDifficulty];
+
     const singingInstruction = isMJSinging
       ? `The user is asking you to sing. RESPOND ENTIRELY IN ENGLISH. Improvise 4-6 lines of original lyrics in your musical style — soulful, emotional, rhythmic. Keep it short and punchy. Do NOT translate to Spanish. Stay fully in character as Michael Jackson performing live.`
       : "";
@@ -339,15 +371,13 @@ Refleja tu estado emocional a través de la puntuación en el texto para que la 
 `;
 
     if (mode === "mission" && missionText) {
-      systemPrompt += `MODO RETO ACTIVO:
+      systemPrompt += `MODO RETO ACTIVO (DIFICULTAD: ${missionDifficulty.toUpperCase()}):
 El usuario está intentando cumplir la siguiente misión histórica contigo: "${missionText}".
 
 Pautas de comportamiento críticas para este reto:
-1. Receptividad y convencimiento rápido (Voluble): Aunque defiendes tu postura histórica de tu época, debes mostrarte razonablemente receptivo e inteligente. Si el usuario te plantea una idea astuta, una analogía lógica o un argumento bien intencionado y alineado con la historia, cede con facilidad en tus dudas y convéncete rápidamente.
-2. Criterio de evaluación dinámico para la reputación (Fácil de convencer en menos de 5 mensajes):
-   - Si el usuario plantea un argumento convincente, coherente o históricamente lógico, recompénsalo de inmediato con un delta positivo muy alto (ej. +20 a +40). Esto permitirá convencerte en 1 a 3 mensajes.
-   - Si el usuario hace comentarios neutrales o preguntas de conversación normal, sé amigable y otorga un delta bajo a moderado (ej. +5 a +10).
-   - Si hace aportaciones totalmente ilógicas, anacrónicas o incoherentes, refútalas con firmeza histórica y devuelve un delta negativo (ej. -5 a -15).
+1. Nivel de terquedad y resistencia: ${difficultyConfig.stubbornness}
+2. ${difficultyConfig.scoring}
+3. Contraargumentación y Debate Obligatorio: Al final de cada respuesta (a menos que ya te hayas convencido del todo al 100%), debes proponer activamente un contraargumento fuerte, plantear una duda filosófica o histórica desafiante, o refutar lo dicho por el usuario para obligarlo a seguir esforzándose y defendiendo su punto. Mantén una actitud debatiente y cuestionadora hasta el último momento.
 
 `;
     } else {
