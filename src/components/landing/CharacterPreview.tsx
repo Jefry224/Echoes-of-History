@@ -1,5 +1,6 @@
 import { CHARACTERS } from "@/lib/characters";
 import { ArrowRight } from "lucide-react";
+import { HeadScene } from "@/components/three/HeadScene";
 
 interface CharacterPreviewProps {
   onEnterMuseum: () => void;
@@ -28,13 +29,11 @@ export function CharacterPreview({ onEnterMuseum }: CharacterPreviewProps) {
         {CHARACTERS.map((c) => (
           <div
             key={c.id}
-            className="rounded-3xl border border-neutral-800 bg-neutral-950/40 p-6 text-center backdrop-blur transition-all duration-300 hover:border-white/30 hover:bg-neutral-900/10 hover:shadow-2xl hover:shadow-white/5"
+            className="flex flex-col items-center rounded-3xl border border-neutral-800 bg-neutral-950/40 p-6 text-center backdrop-blur transition-all duration-300 hover:border-white/35 hover:bg-neutral-900/10 hover:shadow-2xl hover:shadow-white/5"
           >
-            <div
-              className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full text-2xl font-mono font-black border-2 shadow-lg"
-              style={{ borderColor: c.appearance.accent, backgroundColor: "#111111", color: "#ffffff" }}
-            >
-              {c.name.charAt(0)}
+            {/* 3D character head (same style as the museum) */}
+            <div className="h-40 w-full mb-3 pointer-events-none">
+              <HeadScene appearance={c.appearance} className="h-full w-full" cameraZ={4.2} float={true} quality="low" />
             </div>
             <h3 className="text-lg font-bold uppercase tracking-tight leading-tight text-white">{c.name}</h3>
             <p className="mt-1 text-xs font-mono text-neutral-400 uppercase font-bold tracking-wider">{c.title}</p>

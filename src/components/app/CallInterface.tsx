@@ -78,11 +78,23 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
   });
 
   const [textInput, setTextInput] = useState("");
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes countdown (300 seconds)
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes countdown (180 seconds)
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
 
-  // 5 Minutes Countdown Timer for Mission Mode
+  const handleFinishCall = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const finalScore = mode === "mission" ? reputation : 100;
+    const passed = mode === "mission" ? reputation >= 65 : true;
+    onHangUp(messages, finalScore, passed);
+  };
+
+  const handleFinishCallRef = useRef(handleFinishCall);
+  useEffect(() => {
+    handleFinishCallRef.current = handleFinishCall;
+  });
+
+  // 3 Minutes Countdown Timer for Mission Mode
   useEffect(() => {
     if (mode !== "mission") return;
 
@@ -90,7 +102,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          handleFinishCall();
+          handleFinishCallRef.current();
           return 0;
         }
         return prev - 1;
@@ -119,13 +131,6 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSendText();
-  };
-
-  const handleFinishCall = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const finalScore = mode === "mission" ? reputation : 100;
-    const passed = mode === "mission" ? reputation >= 65 : true;
-    onHangUp(messages, finalScore, passed);
   };
 
   const activeSuggestions = SUGGESTIONS[character.id] || [
