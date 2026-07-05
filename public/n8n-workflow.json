@@ -17,6 +17,16 @@
     },
     {
       "parameters": {
+        "jsCode": "const items = $input.all();\nfor (const item of items) {\n  if (item.json.body && typeof item.json.body === 'string') {\n    try {\n      item.json.body = JSON.parse(item.json.body);\n    } catch (e) {\n      // Ignore if parsing fails\n    }\n  }\n}\nreturn items;"
+      },
+      "id": "node-parse-body",
+      "name": "Parsear Body text/plain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
         "resource": "chat",
         "operation": "complete",
         "model": "gpt-4o",
@@ -41,7 +51,7 @@
       "name": "OpenAI – Analizar con Codex",
       "type": "n8n-nodes-base.openAi",
       "typeVersion": 1,
-      "position": [500, 300],
+      "position": [520, 300],
       "credentials": {
         "openAiApi": {
           "id": "YOUR_OPENAI_CREDENTIAL_ID",
@@ -51,19 +61,29 @@
     },
     {
       "parameters": {
+        "jsCode": "const items = $input.all();\nconst webhookData = $('Parsear Body text/plain').item.json.body;\nconst pdfBase64 = webhookData.pdfBase64;\nconst character = webhookData.character;\n\nfor (const item of items) {\n  if (pdfBase64) {\n    item.binary = {\n      attachment: {\n        data: pdfBase64,\n        mimeType: 'application/pdf',\n        fileName: `Flashcards_${character.replace(/\\s+/g, '_')}.pdf`\n      }\n    };\n  }\n}\nreturn items;"
+      },
+      "id": "node-code",
+      "name": "Preparar PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
         "fromEmail": "noreply@echoesofhistory.app",
-        "toEmail": "={{ $('Webhook').item.json.body.email }}",
-        "subject": "=Tus Flashcards de {{ $('Webhook').item.json.body.character }} – Echoes of History",
+        "toEmail": "={{ $('Parsear Body text/plain').item.json.body.email }}",
+        "subject": "=Tus Flashcards de {{ $('Parsear Body text/plain').item.json.body.character }} – Echoes of History",
         "emailFormat": "html",
-        "message": "=<div style=\"font-family: 'Georgia', serif; background-color: #0c0c0e; color: #f5f0e8; max-width: 600px; margin: 0 auto; padding: 40px 32px; border-radius: 16px;\">\n  <div style=\"text-align: center; margin-bottom: 32px;\">\n    <p style=\"font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #8a7043; font-family: monospace; margin: 0;\">Echoes of History</p>\n    <h1 style=\"font-size: 26px; color: #fcd34d; margin: 12px 0 4px;\">Tus Flashcards están listas</h1>\n    <p style=\"font-size: 13px; color: #a3a3a3; margin: 0;\">Generadas por Codex a partir de tu conversación con <strong style=\"color: #fef3c7;\">{{ $('Webhook').item.json.body.character }}</strong></p>\n  </div>\n\n  <div style=\"background: #1a150b; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; margin-bottom: 24px;\">\n    <p style=\"font-size: 12px; font-family: monospace; color: #8a7043; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px;\">Resumen de la misión</p>\n    <table style=\"width: 100%; font-size: 13px; color: #fef3c7;\">\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Usuario</td><td style=\"text-align: right;\">{{ $('Webhook').item.json.body.userName }}</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Personaje</td><td style=\"text-align: right;\">{{ $('Webhook').item.json.body.character }}</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Puntaje</td><td style=\"text-align: right; color: #fcd34d; font-weight: bold;\">{{ $('Webhook').item.json.body.score }}%</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Resultado</td><td style=\"text-align: right;\">{{ $('Webhook').item.json.body.passed ? '✓ Aprobado' : 'Participación' }}</td></tr>\n    </table>\n  </div>\n\n  <p style=\"font-size: 13px; color: #a3a3a3; line-height: 1.7;\">Adjuntamos el archivo <strong style=\"color: #fef3c7;\">Flashcards_{{ $('Webhook').item.json.body.character }}.md</strong> listo para importar en <strong style=\"color: #fef3c7;\">Obsidian</strong> o <strong style=\"color: #fef3c7;\">Anki</strong>.</p>\n\n  <div style=\"margin-top: 40px; padding-top: 24px; border-top: 1px solid #2a2a2a; text-align: center;\">\n    <p style=\"font-size: 11px; color: #525252; font-family: monospace;\">Echoes of History · Hackathon 2026</p>\n  </div>\n</div>",
-        "attachments": "={{ [{\"filename\": \"Flashcards_\" + $('Webhook').item.json.body.character + \".md\", \"content\": $json.message.content, \"contentType\": \"text/markdown\"}] }}",
+        "message": "=<div style=\"font-family: 'Georgia', serif; background-color: #0c0c0e; color: #f5f0e8; max-width: 600px; margin: 0 auto; padding: 40px 32px; border-radius: 16px;\">\n  <div style=\"text-align: center; margin-bottom: 32px;\">\n    <p style=\"font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #8a7043; font-family: monospace; margin: 0;\">Echoes of History</p>\n    <h1 style=\"font-size: 26px; color: #fcd34d; margin: 12px 0 4px;\">Tus Flashcards están listas</h1>\n    <p style=\"font-size: 13px; color: #a3a3a3; margin: 0;\">Generadas por Codex a partir de tu conversación con <strong style=\"color: #fef3c7;\">{{ $('Parsear Body text/plain').item.json.body.character }}</strong></p>\n  </div>\n\n  <div style=\"background: #1a150b; border: 1px solid #d4af37; border-radius: 12px; padding: 24px; margin-bottom: 24px;\">\n    <p style=\"font-size: 12px; font-family: monospace; color: #8a7043; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px;\">Resumen de la misión</p>\n    <table style=\"width: 100%; font-size: 13px; color: #fef3c7;\">\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Usuario</td><td style=\"text-align: right;\">{{ $('Parsear Body text/plain').item.json.body.userName }}</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Personaje</td><td style=\"text-align: right;\">{{ $('Parsear Body text/plain').item.json.body.character }}</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Puntaje</td><td style=\"text-align: right; color: #fcd34d; font-weight: bold;\">{{ $('Parsear Body text/plain').item.json.body.score }}%</td></tr>\n      <tr><td style=\"padding: 4px 0; color: #a3a3a3;\">Resultado</td><td style=\"text-align: right;\">{{ $('Parsear Body text/plain').item.json.body.passed ? '✓ Aprobado' : 'Participación' }}</td></tr>\n    </table>\n  </div>\n\n  <p style=\"font-size: 13px; color: #a3a3a3; line-height: 1.7;\">Adjuntamos las <strong style=\"color: #fef3c7;\">Flashcards_{{ $('Parsear Body text/plain').item.json.body.character }}.pdf</strong> listas con el estilo original listo para ver y repasar.</p>\n\n  <div style=\"margin-top: 40px; padding-top: 24px; border-top: 1px solid #2a2a2a; text-align: center;\">\n    <p style=\"font-size: 11px; color: #525252; font-family: monospace;\">Echoes of History · Hackathon 2026</p>\n  </div>\n</div>",
+        "attachments": "attachment",
         "options": {}
       },
       "id": "node-email",
       "name": "Enviar Flashcards por Correo",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
-      "position": [760, 300],
+      "position": [1020, 300],
       "credentials": {
         "smtp": {
           "id": "YOUR_SMTP_CREDENTIAL_ID",
@@ -74,7 +94,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ markdown: $('OpenAI – Analizar con Codex').item.json.message.content, emailSentTo: $('Webhook').item.json.body.email, character: $('Webhook').item.json.body.character }) }}",
+        "responseBody": "={{ JSON.stringify({ markdown: $('OpenAI – Analizar con Codex').item.json.message.content, emailSentTo: $('Parsear Body text/plain').item.json.body.email, character: $('Parsear Body text/plain').item.json.body.character }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -90,11 +110,22 @@
       "name": "Responder al Frontend",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1020, 300]
+      "position": [1280, 300]
     }
   ],
   "connections": {
     "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parsear Body text/plain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Body text/plain": {
       "main": [
         [
           {
@@ -106,6 +137,17 @@
       ]
     },
     "OpenAI – Analizar con Codex": {
+      "main": [
+        [
+          {
+            "node": "Preparar PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar PDF": {
       "main": [
         [
           {

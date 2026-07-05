@@ -110,6 +110,7 @@ function App() {
               score={lastScore}
               passed={lastPassed}
               transcript={lastTranscript}
+              mode={mode}
               onDone={() => setAppState("selector")}
             />
           )}
