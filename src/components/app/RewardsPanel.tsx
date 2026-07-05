@@ -153,7 +153,8 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
     }
 
     try {
-      const res = await fetch("https://primary-production-bfd4.up.railway.app/webhook/echoes-flashcards", {
+      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "http://localhost:5678/webhook/echoes-flashcards";
+      const res = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
