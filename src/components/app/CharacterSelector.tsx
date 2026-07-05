@@ -245,28 +245,36 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
                     : "border-neutral-800 bg-black/60 hover:border-neutral-600 hover:bg-neutral-900/50"
                 }`}
               >
-                {/* Avatar — half visible on the left */}
+                {/* Avatar — bust image, half visible on the left */}
                 <div
                   aria-hidden="true"
                   className={`pointer-events-none absolute inset-y-0 left-0 w-[52%] overflow-hidden transition-opacity duration-300 ${
-                    isSelected ? "opacity-100" : "opacity-30 group-hover:opacity-65"
+                    isSelected ? "opacity-100" : "opacity-35 group-hover:opacity-70"
                   }`}
                   style={{
                     maskImage: "linear-gradient(to right, black 55%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to right, black 55%, transparent 100%)",
                   }}
                 >
-                  <div className="absolute inset-y-0 left-[-18%] w-[140%]">
-                    <HeadScene
-                      appearance={c.appearance}
-                      className="h-full w-full"
-                      cameraZ={3.6}
-                      quality="low"
-                      float={false}
-                      targetPosition={[0.35, -0.05, 0]}
-                      targetScale={1.05}
+                  {c.previewUrl ? (
+                    <img
+                      src={c.previewUrl}
+                      alt={c.name}
+                      className="absolute top-0 left-0 w-full h-[120px] object-cover object-top"
                     />
-                  </div>
+                  ) : (
+                    <div className="absolute inset-y-0 left-[-18%] w-[140%]">
+                      <HeadScene
+                        appearance={c.appearance}
+                        className="h-full w-full"
+                        cameraZ={3.6}
+                        quality="low"
+                        float={false}
+                        targetPosition={[0.35, -0.05, 0]}
+                        targetScale={1.05}
+                      />
+                    </div>
+                  )}
                   <div
                     className="absolute inset-0 mix-blend-soft-light opacity-40"
                     style={{ background: `linear-gradient(135deg, ${c.appearance.accent}55, transparent 70%)` }}

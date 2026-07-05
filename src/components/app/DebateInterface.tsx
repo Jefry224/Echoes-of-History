@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { VideoPuppet } from "./VideoPuppet";
 import type { Character } from "@/lib/characters";
-import { ArrowLeft, Play, RotateCcw, Sparkles, AlertCircle, Square } from "lucide-react";
+import { ArrowLeft, Play, RotateCcw, AlertCircle, Square } from "lucide-react";
 
 interface DebateInterfaceProps {
   characters: [Character, Character];
@@ -27,7 +27,6 @@ export function DebateInterface({ characters, topic, onBack }: DebateInterfacePr
   const [emotion, setEmotion] = useState<"base" | "feliz" | "enojado" | "triste">("base");
   const [nextSpeakerId, setNextSpeakerId] = useState<string | null>(null);
 
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lipSyncIntervalRef = useRef<any>(null);
   const isCancelledRef = useRef<boolean>(false);
@@ -38,11 +37,6 @@ export function DebateInterface({ characters, topic, onBack }: DebateInterfacePr
       cleanupAll();
     };
   }, []);
-
-  // Scroll to bottom when messages update
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, status, activeSpeakerId]);
 
   // Handle first load / setup
   useEffect(() => {
@@ -453,6 +447,66 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
 
   const isBusy = status === "generating" || status === "speaking" || status === "calling";
 
+  const latestMessageA = [...messages].reverse().find((m) => m.charId === charA.id);
+  const latestMessageB = [...messages].reverse().find((m) => m.charId === charB.id);
+
+  const renderSpeechBubble = (
+    char: Character,
+    latestMessage: DebateMessage | undefined,
+    isLeft: boolean
+  ) => {
+    const isActive = activeSpeakerId === char.id;
+    const isThinking = status === "generating" && isActive;
+    const isConnecting = messages.length === 0 && status === "calling";
+
+    return (
+      <div
+        className={`absolute bottom-20 left-4 right-4 z-20 animate-fade-in ${
+          isLeft ? "md:left-6 md:right-8" : "md:left-8 md:right-6"
+        }`}
+      >
+        <div
+          className={`relative px-4 py-3 rounded-2xl text-xs leading-relaxed shadow-xl backdrop-blur-sm font-serif italic ${
+            isLeft
+              ? "bg-neutral-900/90 text-neutral-200 border border-neutral-700/80 rounded-bl-none"
+              : "bg-[#0d1117]/95 text-neutral-200 border rounded-br-none"
+          }`}
+          style={!isLeft ? { borderColor: `${char.appearance.accent}40` } : undefined}
+        >
+          <div
+            className="text-[9px] font-mono font-bold uppercase mb-1 text-amber-400"
+          >
+            {char.name}
+          </div>
+
+          {isConnecting ? (
+            <p className="text-neutral-500 italic">Conectando...</p>
+          ) : isThinking ? (
+            <div className="flex items-center gap-1.5 py-1">
+              <span className="size-1.5 rounded-full bg-current opacity-40 animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="size-1.5 rounded-full bg-current opacity-40 animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="size-1.5 rounded-full bg-current opacity-40 animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          ) : latestMessage ? (
+            <p>{latestMessage.content}</p>
+          ) : (
+            <p className="text-neutral-500 italic">Esperando su turno...</p>
+          )}
+
+          {/* Bubble tail */}
+          <div
+            className={`absolute -bottom-2 w-4 h-4 rotate-45 ${
+              isLeft
+                ? "left-6 bg-neutral-900/90 border-r border-b border-neutral-700/80"
+                : "right-6 bg-[#0d1117]/95 border-r border-b"
+            }`}
+            style={!isLeft ? { borderColor: `${char.appearance.accent}40` } : undefined}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#080b11] text-white select-none overflow-hidden h-screen font-sans">
       
@@ -489,190 +543,97 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
         Tema: {topic}
       </div>
 
-      {/* ─── MAIN DIALOGUE & PUPPET CONTAINER ─── */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        
-        {/* LEFT/TOP: Visual puppets (Split layout) */}
-        <div className="w-full lg:w-1/2 h-[35vh] lg:h-full grid grid-cols-2 bg-neutral-950 border-r border-neutral-900 relative">
-          
-          {/* Character 1 Puppet Card */}
-          <div className={`relative border-r border-neutral-900 overflow-hidden flex flex-col justify-between transition-all duration-300 ${
+      {/* Status bar */}
+      <div className="px-6 py-2 border-b border-neutral-900/50 bg-black/50 z-20 flex items-center justify-center gap-2 min-h-[36px]">
+        {isBusy && <span className="size-1.5 rounded-full bg-amber-500 animate-ping shrink-0" />}
+        {status === "error" && <AlertCircle className="size-3.5 text-red-500 shrink-0" />}
+        <span className="text-[10px] font-mono text-neutral-400 text-center tracking-wide">
+          {getStatusLabel()}
+        </span>
+      </div>
+
+      {/* ─── MAIN: split-screen characters ─── */}
+      <div className="flex-1 flex flex-row overflow-hidden relative">
+
+        {/* Character A — left half */}
+        <div
+          className={`relative w-1/2 h-full border-r border-neutral-900 overflow-hidden transition-all duration-300 ${
             activeSpeakerId === charA.id ? "ring-2 ring-inset ring-amber-500/30" : ""
-          }`}>
-            {/* 3D Puppet */}
-            <div className="absolute inset-0 z-0">
-              <VideoPuppet
-                character={charA}
-                isSpeaking={activeSpeakerId === charA.id && status === "speaking"}
-                speakingLevel={activeSpeakerId === charA.id ? speakingLevel : 0}
-                emotion={activeSpeakerId === charA.id ? emotion : "base"}
-              />
-            </div>
-            {/* Header info overlay */}
-            <div className="relative z-10 p-3 bg-gradient-to-b from-black/80 to-transparent">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">Personaje A</span>
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight text-white">{charA.name}</h3>
-              <p className="text-[9px] text-neutral-400 truncate">{charA.title}</p>
-            </div>
-            {/* Speaking Status Glow */}
-            {activeSpeakerId === charA.id && (
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500 animate-pulse z-10" />
-            )}
+          }`}
+        >
+          <div className="absolute inset-0 z-0">
+            <VideoPuppet
+              character={charA}
+              isSpeaking={activeSpeakerId === charA.id && status === "speaking"}
+              speakingLevel={activeSpeakerId === charA.id ? speakingLevel : 0}
+              emotion={activeSpeakerId === charA.id ? emotion : "base"}
+              fillHeight
+            />
           </div>
 
-          {/* Character 2 Puppet Card */}
-          <div className={`relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${
-            activeSpeakerId === charB.id ? "ring-2 ring-inset ring-amber-500/30" : ""
-          }`}>
-            {/* 3D Puppet */}
-            <div className="absolute inset-0 z-0">
-              <VideoPuppet
-                character={charB}
-                isSpeaking={activeSpeakerId === charB.id && status === "speaking"}
-                speakingLevel={activeSpeakerId === charB.id ? speakingLevel : 0}
-                emotion={activeSpeakerId === charB.id ? emotion : "base"}
-              />
-            </div>
-            {/* Header info overlay */}
-            <div className="relative z-10 p-3 bg-gradient-to-b from-black/80 to-transparent">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">Personaje B</span>
-              <h3 className="text-xs sm:text-sm font-black uppercase tracking-tight text-white">{charB.name}</h3>
-              <p className="text-[9px] text-neutral-400 truncate">{charB.title}</p>
-            </div>
-            {/* Speaking Status Glow */}
-            {activeSpeakerId === charB.id && (
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500 animate-pulse z-10" />
-            )}
+          <div className="relative z-10 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <h3 className="text-sm font-black uppercase tracking-tight text-white">{charA.name}</h3>
+            <p className="text-[10px] text-neutral-400 truncate">{charA.title}</p>
           </div>
 
+          {renderSpeechBubble(charA, latestMessageA, true)}
+
+          {activeSpeakerId === charA.id && (
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500 animate-pulse z-10" />
+          )}
         </div>
 
-        {/* RIGHT/BOTTOM: Chat feed showing transcript */}
-        <div className="w-full lg:w-1/2 h-[65vh] lg:h-full flex flex-col bg-[#0b0f17]/80 backdrop-blur-md">
-          
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
-                <div className="p-4 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-500 animate-pulse">
-                  <Sparkles className="size-8" />
-                </div>
-                <h3 className="text-lg font-black uppercase tracking-tight">Estableciendo Conexión Temporal</h3>
-                <p className="text-xs text-neutral-400 max-w-sm leading-relaxed">
-                  Invocando a {charA.name} y {charB.name} para entablar un debate histórico sobre: <span className="text-white italic">"{topic}"</span>.
-                </p>
-              </div>
+        {/* Character B — right half */}
+        <div
+          className={`relative w-1/2 h-full overflow-hidden transition-all duration-300 ${
+            activeSpeakerId === charB.id ? "ring-2 ring-inset ring-amber-500/30" : ""
+          }`}
+        >
+          <div className="absolute inset-0 z-0">
+            <VideoPuppet
+              character={charB}
+              isSpeaking={activeSpeakerId === charB.id && status === "speaking"}
+              speakingLevel={activeSpeakerId === charB.id ? speakingLevel : 0}
+              emotion={activeSpeakerId === charB.id ? emotion : "base"}
+              fillHeight
+            />
+          </div>
+
+          <div className="relative z-10 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <h3 className="text-sm font-black uppercase tracking-tight text-white text-right">{charB.name}</h3>
+            <p className="text-[10px] text-neutral-400 truncate text-right">{charB.title}</p>
+          </div>
+
+          {renderSpeechBubble(charB, latestMessageB, false)}
+
+          {activeSpeakerId === charB.id && (
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500 animate-pulse z-10" />
+          )}
+        </div>
+
+        {/* ─── CONTROLS DOCK (floating center bottom) ─── */}
+        <div className="absolute bottom-0 inset-x-0 z-30 px-6 pb-4 pt-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none">
+          <div className="max-w-md mx-auto flex flex-col items-center pointer-events-auto">
+
+            {isBusy ? (
+              <button
+                onClick={handleStop}
+                className="group flex h-12 items-center justify-center gap-3 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-8 text-xs font-black uppercase tracking-wider transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg backdrop-blur-sm"
+              >
+                <Square className="size-3.5 fill-current text-red-400" />
+                Detener
+              </button>
             ) : (
-              <div className="space-y-4">
-                {messages.map((msg) => {
-                  const isCharA = msg.charId === charA.id;
-                  const char = isCharA ? charA : charB;
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex gap-3 items-start animate-fade-in ${
-                        isCharA ? "justify-start" : "justify-end"
-                      }`}
-                    >
-                      {isCharA && (
-                        <div
-                          className="flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-black animate-fade-in"
-                          style={{ borderColor: char.appearance.accent, backgroundColor: "#000" }}
-                        >
-                          {char.name.charAt(0)}
-                        </div>
-                      )}
-
-                      <div
-                        className={`px-4 py-3 rounded-2xl text-xs max-w-[80%] leading-relaxed ${
-                          isCharA
-                            ? "bg-neutral-900 text-neutral-200 border border-neutral-800 rounded-tl-none font-serif italic"
-                            : "bg-white text-black font-sans font-medium rounded-tr-none"
-                        }`}
-                      >
-                        <div className={`text-[9px] font-mono font-bold uppercase mb-1 ${
-                          isCharA ? "text-amber-400" : "text-neutral-500"
-                        }`}>
-                          {msg.name}
-                        </div>
-                        {msg.content}
-                      </div>
-
-                      {!isCharA && (
-                        <div
-                          className="flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-black animate-fade-in"
-                          style={{ borderColor: char.appearance.accent, backgroundColor: "#000" }}
-                        >
-                          {char.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                
-                {/* Loader when generating response */}
-                {status === "generating" && (
-                  <div className={`flex gap-3 items-start ${
-                    activeSpeakerId === charA.id ? "justify-start" : "justify-end"
-                  }`}>
-                    {activeSpeakerId === charA.id && (
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-neutral-800 bg-black text-[10px] font-mono font-black animate-pulse">
-                        A
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-2xl">
-                        <span className="size-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="size-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="size-1.5 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: "300ms" }} />
-                      </div>
-                    </div>
-                    {activeSpeakerId === charB.id && (
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-neutral-800 bg-black text-[10px] font-mono font-black animate-pulse">
-                        B
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                <div ref={chatEndRef} />
-              </div>
+              <button
+                onClick={executeNextPair}
+                className="group flex h-12 items-center justify-center gap-3 rounded-full bg-white text-black hover:bg-neutral-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg px-8 text-xs font-black uppercase tracking-wider relative overflow-hidden backdrop-blur-sm"
+              >
+                <Play className="size-3.5 fill-current text-black group-hover:scale-110 transition-transform" />
+                Seguir
+                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
             )}
           </div>
-
-          {/* ─── CONTROLS DOCK ─── */}
-          <div className="p-6 border-t border-neutral-900 bg-black/60">
-            <div className="max-w-md mx-auto flex flex-col items-center gap-4">
-              
-              {/* Status text */}
-              <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400 text-center tracking-wide leading-normal">
-                {isBusy && <span className="size-1.5 rounded-full bg-amber-500 animate-ping shrink-0" />}
-                {status === "error" && <AlertCircle className="size-3.5 text-red-500 shrink-0" />}
-                <span>{getStatusLabel()}</span>
-              </div>
-
-              {/* Continue/Stop CTA Button */}
-              {isBusy ? (
-                <button
-                  onClick={handleStop}
-                  className="group flex h-14 items-center justify-center gap-3 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-10 text-sm font-black uppercase tracking-wider transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg"
-                >
-                  <Square className="size-4 fill-current text-red-400" />
-                  Detener
-                </button>
-              ) : (
-                <button
-                  onClick={executeNextPair}
-                  className="group flex h-14 items-center justify-center gap-3 rounded-full bg-white text-black hover:bg-neutral-200 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-lg px-10 text-sm font-black uppercase tracking-wider relative overflow-hidden"
-                >
-                  <Play className="size-4 fill-current text-black group-hover:scale-110 transition-transform" />
-                  Seguir
-                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              )}
-
-            </div>
-          </div>
-
         </div>
 
       </div>

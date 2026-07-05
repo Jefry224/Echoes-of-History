@@ -6,9 +6,10 @@ interface VideoPuppetProps {
   isSpeaking: boolean;
   speakingLevel: number;
   emotion?: "base" | "feliz" | "enojado" | "triste";
+  fillHeight?: boolean;
 }
 
-export function VideoPuppet({ character, isSpeaking, speakingLevel, emotion = "base" }: VideoPuppetProps) {
+export function VideoPuppet({ character, speakingLevel, emotion = "base", fillHeight = false }: VideoPuppetProps) {
   return (
     <div className="relative w-full h-full bg-neutral-950 flex items-center justify-center overflow-hidden">
       
@@ -19,21 +20,14 @@ export function VideoPuppet({ character, isSpeaking, speakingLevel, emotion = "b
       <div className="absolute inset-0 w-full h-full z-10">
         <HeadScene
           appearance={character.appearance}
+          modelUrl={character.modelUrl}
           speaking={speakingLevel}
-          className="h-full w-full"
+          className={fillHeight ? "w-full h-full" : "w-full h-full max-h-[72%]"}
           float
-          cameraZ={4.8}
+          cameraZ={character.modelUrl ? 5.5 : 4.8}
           emotion={emotion}
         />
       </div>
-
-      {/* Real-time speech ripple rings overlay */}
-      {isSpeaking && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="absolute size-44 rounded-full border border-white/10 animate-ping" />
-          <div className="absolute size-52 rounded-full border border-white/5 animate-pulse" />
-        </div>
-      )}
 
     </div>
   );
