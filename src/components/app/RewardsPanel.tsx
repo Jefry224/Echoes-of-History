@@ -11,10 +11,11 @@ interface RewardsPanelProps {
   passed: boolean;
   transcript: { role: string; content: string }[];
   mode: "casual" | "mission";
+  missionText?: string;
   onDone: () => void;
 }
 
-export function RewardsPanel({ character, score, passed, transcript, mode, onDone }: RewardsPanelProps) {
+export function RewardsPanel({ character, score, passed, transcript, mode, missionText, onDone }: RewardsPanelProps) {
   const [exporting, setExporting] = useState(false);
   const [userName, setUserName] = useState(() => {
     return localStorage.getItem("echoes_user_name") || "Investigador";
@@ -262,7 +263,8 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
             />
             
             <p className="text-xs text-[#d4af37] max-w-md leading-relaxed mt-4 font-sans text-center">
-              Por debatir y convencer con éxito a {character.name} en el desafío de argumentación temporal,
+              Por debatir y convencer con éxito a {character.name} en el desafío de argumentación temporal:
+              {missionText && <span className="block text-white font-mono my-2 text-sm italic">"{missionText}"</span>}
               alcanzando un índice de reputación histórica del <strong className="text-white font-black">{score}%</strong>.
             </p>
 
@@ -515,7 +517,8 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
               {userName}
             </span>
             <p style={{ fontSize: "12px", color: "#d4af37", maxWidth: "450px", lineHeight: "1.6", marginTop: "12px", fontFamily: "sans-serif" }}>
-              Por debatir y convencer con éxito a {character.name} en el desafío de argumentación temporal,
+              Por debatir y convencer con éxito a {character.name} en el desafío de argumentación temporal:
+              {missionText && <span style={{ display: "block", color: "#ffffff", fontFamily: "monospace", margin: "8px 0", fontSize: "12px", fontStyle: "italic" }}>"{missionText}"</span>}
               alcanzando un índice de reputación histórica del <strong style={{ color: "#ffffff", fontWeight: "900" }}>{score}%</strong>.
             </p>
             <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "32px", paddingTop: "16px", borderTop: "1px solid rgba(212,175,55,0.2)" }}>

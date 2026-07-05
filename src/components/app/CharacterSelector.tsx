@@ -6,7 +6,7 @@ import { ArrowLeft, ShieldCheck, HelpCircle, PhoneCall, Trash2, Swords } from "l
 
 interface CharacterSelectorProps {
   onBack: () => void;
-  onStart: (char: Character, mode: "casual" | "mission", missionText?: string) => void;
+  onStart: (char: Character, mode: "casual" | "mission", missionText?: string, difficulty?: "fácil" | "media" | "difícil") => void;
   onStartDebate?: (char1: Character, char2: Character, topic: string) => void;
 }
 
@@ -99,12 +99,23 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
         if (selectedChar) {
           const activeMissions = MISSION_OBJECTIVES[selectedChar.id] || [];
           const missionText = mode === "mission" ? activeMissions[selectedMissionIndex] : undefined;
-          onStart(selectedChar, mode, missionText);
+          const difficulties: ("fácil" | "media" | "difícil")[] = ["fácil", "media", "difícil"];
+          const difficulty = mode === "mission" ? difficulties[selectedMissionIndex] : undefined;
+          onStart(selectedChar, mode, missionText, difficulty);
         }
       }
     }, 2800);
     return () => clearTimeout(t);
   }, [calling, mode, selectedChar, selectedMissionIndex, selectedDebateChars, debateTopic, onStart, onStartDebate]);
+
+  // Play ringing sound while calling overlay is active
+  useEffect(() => {
+    if (!calling) return;
+    const stopRinging = playRingingSound();
+    return () => {
+      stopRinging();
+    };
+  }, [calling]);
 
   const handleConfirm = () => {
     if (mode === "debate") {
@@ -135,8 +146,14 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
 
   const clearChatHistory = (e: React.MouseEvent, charId: string) => {
     e.stopPropagation();
-    localStorage.removeItem(`echoes_chat_history_${charId}`);
-    localStorage.removeItem(`echoes_reputation_${charId}`);
+    const historyKey = mode === "mission" 
+      ? `echoes_chat_history_mission_${charId}` 
+      : `echoes_chat_history_casual_${charId}`;
+    const reputationKey = mode === "mission" 
+      ? `echoes_reputation_mission_${charId}` 
+      : `echoes_reputation_casual_${charId}`;
+    localStorage.removeItem(historyKey);
+    localStorage.removeItem(reputationKey);
     forceUpdate((n) => n + 1);
   };
 
@@ -231,7 +248,10 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
               ? selectedDebateChars.some((char) => char.id === c.id)
               : selectedChar?.id === c.id;
             const debateIndex = selectedDebateChars.findIndex((char) => char.id === c.id);
-            const hasHistory = typeof window !== "undefined" && !!localStorage.getItem(`echoes_chat_history_${c.id}`);
+            const historyKey = mode === "mission" 
+              ? `echoes_chat_history_mission_${c.id}` 
+              : `echoes_chat_history_casual_${c.id}`;
+            const hasHistory = typeof window !== "undefined" && !!localStorage.getItem(historyKey);
             return (
               <button
                 key={c.id}
@@ -564,13 +584,22 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
                             <button
                               key={idx}
                               onClick={() => setSelectedMissionIndex(idx)}
-                              className={`shrink-0 w-[min(82vw,240px)] sm:w-auto snap-start text-left p-2.5 rounded-xl text-[11px] leading-relaxed font-sans border transition-all cursor-pointer ${
+                              className={`shrink-0 w-[min(82vw,240px)] sm:w-auto snap-start flex flex-col gap-1.5 text-left p-2.5 rounded-xl text-[11px] leading-relaxed font-sans border transition-all cursor-pointer ${
                                 selectedMissionIndex === idx
                                   ? "bg-neutral-900 border-white text-white font-medium"
-                                  : "bg-transparent border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200"
+                                  : "bg-transparent border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200"
                               }`}
                             >
-                              {mission}
+                              <span className={`text-[8px] font-mono uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded ${
+                                idx === 0
+                                  ? (selectedMissionIndex === idx ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-green-950/40 text-green-400 border border-green-900/30")
+                                  : idx === 1
+                                    ? (selectedMissionIndex === idx ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" : "bg-yellow-950/40 text-yellow-400 border border-yellow-900/30")
+                                    : (selectedMissionIndex === idx ? "bg-red-500/20 text-red-300 border border-red-500/30" : "bg-red-950/40 text-red-400 border border-red-900/30")
+                              }`}>
+                                {idx === 0 ? "Fácil" : idx === 1 ? "Media" : "Difícil"}
+                              </span>
+                              <span>{mission}</span>
                             </button>
                           ))}
                         </div>
@@ -611,4 +640,58 @@ export function CharacterSelector({ onBack, onStart, onStartDebate }: CharacterS
 
     </div>
   );
+}
+
+function playRingingSound() {
+  if (typeof window === "undefined") return () => {};
+  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContext) return () => {};
+  const ctx = new AudioContext();
+  let isPlaying = true;
+  
+  async function playRing() {
+    while (isPlaying) {
+      if (ctx.state === "suspended") {
+        try { await ctx.resume(); } catch { break; }
+      }
+      
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc1.type = "sine";
+      osc2.type = "sine";
+      
+      osc1.frequency.setValueAtTime(440, ctx.currentTime);
+      osc2.frequency.setValueAtTime(480, ctx.currentTime);
+      
+      gainNode.gain.setValueAtTime(0, ctx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.08, ctx.currentTime + 1.0);
+      gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.1);
+      
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc1.start();
+      osc2.start();
+      
+      osc1.stop(ctx.currentTime + 1.2);
+      osc2.stop(ctx.currentTime + 1.2);
+      
+      // Wait for ring duration (1.2s) + pause (1.3s) = 2.5s total cycle
+      await new Promise((resolve) => {
+        const t = setTimeout(resolve, 2500);
+        if (!isPlaying) clearTimeout(t);
+      });
+    }
+  }
+  
+  playRing();
+  
+  return () => {
+    isPlaying = false;
+    try { ctx.close(); } catch { }
+  };
 }

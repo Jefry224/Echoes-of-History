@@ -9,6 +9,7 @@ interface CallInterfaceProps {
   character: Character;
   mode: "casual" | "mission";
   missionText?: string;
+  missionDifficulty?: "fácil" | "media" | "difícil";
   onBack: () => void;
   onHangUp: (history: { role: string; content: string }[], score: number, passed: boolean) => void;
 }
@@ -50,7 +51,7 @@ const STATUS_LABEL: Record<string, string> = {
   error: "Error de audio. Intenta de nuevo.",
 };
 
-export function CallInterface({ character, mode, missionText, onBack, onHangUp }: CallInterfaceProps) {
+export function CallInterface({ character, mode, missionText, missionDifficulty = "fácil", onBack, onHangUp }: CallInterfaceProps) {
   const { 
     status, 
     messages, 
@@ -66,7 +67,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
     reset,
     reputation,
     emotion
-  } = useVoiceConversation(character, mode, missionText);
+  } = useVoiceConversation(character, mode, missionText, missionDifficulty);
 
   const [autoInterrupt, setAutoInterrupt] = useState(false);
 
@@ -83,6 +84,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
   const timerRef = useRef<number | null>(null);
 
   const handleFinishCall = () => {
+    playHangUpSound();
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = mode === "mission" ? reputation : 100;
     const passed = mode === "mission" ? reputation >= 65 : true;
@@ -113,6 +115,16 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [mode]);
+
+  // Automatically end call when reputation reaches 100% and assistant is done speaking (idle)
+  useEffect(() => {
+    if (mode === "mission" && reputation >= 100 && status === "idle") {
+      const timer = setTimeout(() => {
+        handleFinishCallRef.current();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [mode, reputation, status]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -156,7 +168,10 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-black/60">
           <button
-            onClick={onBack}
+            onClick={() => {
+              playHangUpSound();
+              onBack();
+            }}
             className="flex items-center gap-2 text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer"
           >
             <ArrowLeft className="size-4" />
@@ -175,8 +190,14 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
             <button
               onClick={() => {
                 if (confirm(`¿Limpiar todo el historial con ${character.name}?`)) {
-                  localStorage.removeItem(`echoes_chat_history_${character.id}`);
-                  localStorage.removeItem(`echoes_reputation_${character.id}`);
+                  const historyKey = mode === "mission" 
+                    ? `echoes_chat_history_mission_${character.id}` 
+                    : `echoes_chat_history_casual_${character.id}`;
+                  const reputationKey = mode === "mission" 
+                    ? `echoes_reputation_mission_${character.id}` 
+                    : `echoes_reputation_casual_${character.id}`;
+                  localStorage.removeItem(historyKey);
+                  localStorage.removeItem(reputationKey);
                   reset();
                 }
               }}
@@ -481,4 +502,31 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
 
     </div>
   );
+}
+
+function playHangUpSound() {
+  if (typeof window === "undefined") return;
+  const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  
+  const osc = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(320, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.35);
+  
+  gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+  
+  osc.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  
+  osc.start();
+  osc.stop(ctx.currentTime + 0.36);
+  
+  setTimeout(() => {
+    try { ctx.close(); } catch { }
+  }, 400);
 }

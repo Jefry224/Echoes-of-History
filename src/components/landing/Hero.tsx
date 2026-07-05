@@ -46,7 +46,7 @@ export function Hero({ onEnterMuseum }: HeroProps) {
 
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-24 bg-transparent text-white">
-      
+
       {/* 
         Full-screen background Magic Rings portal (Dark theme)
         - CRITICAL: Changed to pointer-events-none so it DOES NOT block mouse scrolling or clicks,
@@ -87,7 +87,7 @@ export function Hero({ onEnterMuseum }: HeroProps) {
 
       {/* Hero Content Wrapper - high z-index (z-30) to remain fully clickable */}
       <div className="relative z-30 max-w-4xl flex flex-col items-center text-center pointer-events-auto">
-        
+
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/80 px-4 py-1.5 text-xs font-mono uppercase tracking-widest text-neutral-200 backdrop-blur">
           <span className="size-2 rounded-full bg-white animate-pulse" />
           Portal de Inmersión Histórica
@@ -105,7 +105,7 @@ export function Hero({ onEnterMuseum }: HeroProps) {
         </p>
 
         <p className="mt-3 max-w-xl text-pretty text-sm md:text-base leading-relaxed text-neutral-400 font-sans">
-          Cruza el portal y dialoga directamente con los protagonistas del pasado en llamadas tridimensionales e interactivas.
+          Cruza el portal y dialoga directamente con los protagonistas del pasado y personajes históricos en llamadas tridimensionales e interactivas.
         </p>
       </div>
 

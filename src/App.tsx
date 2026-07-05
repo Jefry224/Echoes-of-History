@@ -5,12 +5,12 @@ import { CharacterPreview } from "@/components/landing/CharacterPreview";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import type { Character } from "@/lib/characters";
 import "./index.css";
-import { DebateInterface } from "./components/app/DebateInterface";
 
-const EinsteinGuide    = lazy(() => import("@/components/einstein-guide").then(m => ({ default: m.EinsteinGuide })));
+const EinsteinGuide     = lazy(() => import("@/components/einstein-guide").then(m => ({ default: m.EinsteinGuide })));
 const CharacterSelector = lazy(() => import("@/components/app/CharacterSelector").then(m => ({ default: m.CharacterSelector })));
-const CallInterface    = lazy(() => import("@/components/app/CallInterface").then(m => ({ default: m.CallInterface })));
-const RewardsPanel     = lazy(() => import("@/components/app/RewardsPanel").then(m => ({ default: m.RewardsPanel })));
+const CallInterface     = lazy(() => import("@/components/app/CallInterface").then(m => ({ default: m.CallInterface })));
+const RewardsPanel      = lazy(() => import("@/components/app/RewardsPanel").then(m => ({ default: m.RewardsPanel })));
+const DebateInterface   = lazy(() => import("@/components/app/DebateInterface").then(m => ({ default: m.DebateInterface })));
 
 function App() {
   const [view, setView] = useState<"landing" | "app">("landing");
@@ -18,6 +18,7 @@ function App() {
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
   const [mode, setMode] = useState<"casual" | "mission">("casual");
   const [activeMission, setActiveMission] = useState<string | undefined>(undefined);
+  const [activeDifficulty, setActiveDifficulty] = useState<"fácil" | "media" | "difícil" | undefined>(undefined);
 
   // Debate states
   const [debateCharacters, setDebateCharacters] = useState<[Character, Character] | null>(null);
@@ -37,10 +38,16 @@ function App() {
     setView("landing");
   };
 
-  const handleStartCall = (char: Character, selectedMode: "casual" | "mission", missionText?: string) => {
+  const handleStartCall = (
+    char: Character,
+    selectedMode: "casual" | "mission",
+    missionText?: string,
+    difficulty?: "fácil" | "media" | "difícil"
+  ) => {
     setActiveCharacter(char);
     setMode(selectedMode);
     setActiveMission(missionText);
+    setActiveDifficulty(difficulty);
     setAppState("call");
   };
 
@@ -55,6 +62,11 @@ function App() {
     score: number,
     passed: boolean
   ) => {
+    const hasConversed = transcript.some((m) => m.role === "user");
+    if (!hasConversed) {
+      setAppState("selector");
+      return;
+    }
     setLastTranscript(transcript);
     setLastScore(score);
     setLastPassed(passed);
@@ -99,6 +111,7 @@ function App() {
                 character={activeCharacter}
                 mode={mode}
                 missionText={activeMission}
+                missionDifficulty={activeDifficulty}
                 onBack={() => setAppState("selector")}
                 onHangUp={handleCallFinished}
               />
@@ -119,6 +132,7 @@ function App() {
               passed={lastPassed}
               transcript={lastTranscript}
               mode={mode}
+              missionText={activeMission}
               onDone={() => setAppState("selector")}
             />
           )}

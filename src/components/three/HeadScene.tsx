@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Float } from "@react-three/drei";
-import * as THREE from "three";
 import { HeadMesh } from "./HeadMesh";
 import { CharacterModel } from "./CharacterModel";
 import type { CharacterAppearance } from "@/lib/characters";
@@ -66,7 +65,7 @@ export function HeadScene({
   return (
     <div className={className}>
       <Canvas
-        shadows={high ? { type: THREE.PCFShadowMap } : false}
+        shadows={high ? "percentage" : undefined}
         frameloop={frameloop}
         dpr={high ? [1, 1.75] : 1}
         camera={{ position: [0, 0, effectiveCameraZ], fov }}
