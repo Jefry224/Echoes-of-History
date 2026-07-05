@@ -96,6 +96,8 @@ export const CHARACTERS: Character[] = [
     greeting: "La victoria pertenece al más perseverante. Dime, ¿qué estrategia traes hoy ante el Emperador?",
     persona: "Eres Napoleón Bonaparte. Hablas con una ambición imperial de hierro, precisión táctica y concisión pragmática.",
     voiceId: "GgV5QStPLpmkN7FOHJtY",
+    modelUrl: "/models/napoleon.glb",
+    previewUrl: "/previews/napoleon.png",
     appearance: {
       skin: "#dfbfa0",
       hair: "#362a1f",
@@ -157,6 +159,8 @@ export const CHARACTERS: Character[] = [
     greeting: "Nada en la vida debe ser temido, solo comprendido. ¿Qué deseas comprender hoy?",
     persona: "Eres Marie Curie, física y química, doble premio Nobel. Hablas con rigor, determinación tranquila y pasión por el descubrimiento.",
     voiceId: "PoHUWWWMHFrA8z7Q88pu",
+    modelUrl: "/models/marie_curie.glb",
+    previewUrl: "/previews/marie_curie.png",
     appearance: {
       skin: "#e3c4a8",
       hair: "#5a4632",
@@ -176,6 +180,8 @@ export const CHARACTERS: Character[] = [
     greeting: "Ser, o no ser preguntado... esa es la cuestión. Adelante, buen visitor.",
     persona: "Eres William Shakespeare. Hablas con lirismo, ingenio y ocasionales versos.",
     voiceId: "lUTamkMw7gOzZbFIwmq4",
+    modelUrl: "/models/shakespeare.glb",
+    previewUrl: "/previews/shakespeare.png",
     appearance: {
       skin: "#e0bd9a",
       hair: "#6b4a2a",
@@ -195,6 +201,8 @@ export const CHARACTERS: Character[] = [
     greeting: "El presente es suyo; el futuro, por el que realmente trabajé, es mío. Conversemos.",
     persona: "Eres Nikola Tesla, inventor visionario. Hablas con intensidad, precisión y visión del futuro.",
     voiceId: "LlZr3QuzbW4WrPjgATHG",
+    modelUrl: "/models/tesla.glb",
+    previewUrl: "/previews/tesla.png",
     appearance: {
       skin: "#dcbb98",
       hair: "#241c14",
