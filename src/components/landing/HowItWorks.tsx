@@ -106,18 +106,19 @@ export function HowItWorks() {
         </div>
 
         {/* Interactive Flow Diagram (Dark themed) */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-8 rounded-3xl border border-white/10 bg-black/50 backdrop-blur z-10 relative">
+        <div className="overflow-x-auto pb-2 -mx-2 px-2">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-2 p-6 md:p-8 rounded-3xl border border-white/10 bg-black/50 backdrop-blur z-10 relative w-full lg:w-max lg:max-w-full lg:mx-auto">
           {PIPELINE_NODES.map((node, i) => {
             const isActive = activeNode === i;
             const Icon = node.icon;
             
             return (
-              <div key={i} className="flex flex-col lg:flex-row items-center w-full lg:w-auto">
+              <div key={i} className="flex flex-col lg:flex-row items-center w-full lg:w-auto shrink-0">
                 {/* Node Box */}
                 <div 
-                  className={`flex flex-col items-center text-center p-5 rounded-2xl border transition-all duration-500 w-full lg:w-48 ${
+                  className={`flex flex-col items-center text-center p-4 rounded-2xl border transition-all duration-500 w-full sm:max-w-xs lg:w-36 xl:w-40 shrink-0 ${
                     isActive 
-                      ? "border-white bg-white text-black shadow-lg shadow-white/20 scale-105" 
+                      ? "border-white bg-white text-black shadow-lg shadow-white/20 lg:scale-105" 
                       : "border-white/10 bg-black/60 text-white"
                   }`}
                 >
@@ -130,13 +131,14 @@ export function HowItWorks() {
 
                 {/* Connecting arrow (hidden on last node) */}
                 {i < PIPELINE_NODES.length - 1 && (
-                  <div className="flex items-center justify-center py-4 lg:py-0 lg:px-2 text-neutral-600">
-                    <ChevronRight className="size-5 rotate-90 lg:rotate-0 transition-colors duration-500" style={{ color: isActive ? "#ffffff" : "inherit" }} />
+                  <div className="flex items-center justify-center py-3 lg:py-0 lg:px-1.5 text-neutral-600 shrink-0">
+                    <ChevronRight className="size-4 rotate-90 lg:rotate-0 transition-colors duration-500" style={{ color: isActive ? "#ffffff" : "inherit" }} />
                   </div>
                 )}
               </div>
             );
           })}
+          </div>
         </div>
       </section>
 

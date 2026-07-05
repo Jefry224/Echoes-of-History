@@ -400,6 +400,7 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
             isSpeaking={status === "speaking"} 
             speakingLevel={speakingLevel} 
             emotion={emotion}
+            fillHeight
           />
         </div>
 

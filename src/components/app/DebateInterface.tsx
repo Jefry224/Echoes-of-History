@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { VideoPuppet } from "./VideoPuppet";
 import type { Character } from "@/lib/characters";
 import { ArrowLeft, Play, RotateCcw, AlertCircle, Square } from "lucide-react";
+import { env } from "@/lib/env";
 
 interface DebateInterfaceProps {
   characters: [Character, Character];
@@ -114,7 +115,7 @@ export function DebateInterface({ characters, topic, onBack }: DebateInterfacePr
     listener: Character,
     currentHistory: DebateMessage[]
   ): Promise<{ text: string; emotion: string }> => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const apiKey = env.openai;
 
     if (!apiKey) {
       // Local fallback in case there is no API Key
@@ -232,7 +233,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
         setActiveSpeakerId(null);
       };
 
-      const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+      const ELEVENLABS_API_KEY = env.elevenlabs;
 
       const runFallback = () => {
         if (isCancelledRef.current) {

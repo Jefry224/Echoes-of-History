@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Character } from "@/lib/characters";
 import { Sparkles, CheckCircle, XCircle, ArrowLeft, Loader2, Mail, Download } from "lucide-react";
+import { env } from "@/lib/env";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -150,10 +151,10 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
       } catch (e) {
         console.error("Error generating PDF", e);
       }
-    }
+    } 
 
     try {
-      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || "http://localhost:5678/webhook/echoes-flashcards";
+      const webhookUrl = env.n8nWebhook || "http://localhost:5678/webhook/echoes-flashcards";
       const res = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
