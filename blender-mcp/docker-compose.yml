@@ -1,0 +1,10 @@
+services:
+  blender-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blender-mcp:latest
+    volumes:
+      - /home/daniel/Desktop/Echoes-of-History:/workspace
+    stdin_open: true
+    tty: false
