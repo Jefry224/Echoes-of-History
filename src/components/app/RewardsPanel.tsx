@@ -117,7 +117,7 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
     if (element) {
       try {
         const canvas = await html2canvas(element, {
-          scale: 2,
+          scale: 1.2,
           useCORS: true,
           backgroundColor: "#0b0f19",
           logging: false
@@ -126,19 +126,19 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
         const imgWidth = 210;
         const pageHeight = 297;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.8);
 
         const pdf = new jsPDF("p", "mm", "a4");
         let heightLeft = imgHeight;
         let position = 0;
 
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
         while (heightLeft >= 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
 
@@ -422,7 +422,7 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
                     if (element) {
                       try {
                         const canvas = await html2canvas(element, {
-                          scale: 2,
+                          scale: 1.2,
                           useCORS: true,
                           backgroundColor: "#0b0f19",
                           logging: false
@@ -431,19 +431,19 @@ export function RewardsPanel({ character, score, passed, transcript, mode, onDon
                         const imgWidth = 210;
                         const pageHeight = 297;
                         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                        const imgData = canvas.toDataURL("image/png");
+                        const imgData = canvas.toDataURL("image/jpeg", 0.8);
 
                         const pdf = new jsPDF("p", "mm", "a4");
                         let heightLeft = imgHeight;
                         let position = 0;
 
-                        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+                        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
                         heightLeft -= pageHeight;
 
                         while (heightLeft >= 0) {
                           position = heightLeft - imgHeight;
                           pdf.addPage();
-                          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+                          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
                           heightLeft -= pageHeight;
                         }
                         pdf.save(`Flashcards_${character.id}.pdf`);
