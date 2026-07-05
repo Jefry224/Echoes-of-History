@@ -342,15 +342,15 @@ export function useVoiceConversation(
     const difficultyConfig = {
       fácil: {
         stubbornness: "Eres bastante amigable y receptivo. Si el usuario te plantea una idea razonable o lógica, cede con facilidad, felicítalo y muéstrate convencido rápidamente.",
-        scoring: "Criterio de evaluación amigable: Recompensa al usuario de forma generosa. Por cada argumento coherente o amigable, otórgale un delta de reputación positivo alto (ej. +20 a +35). Permite que se te convenza en 2 o 3 mensajes."
+        scoring: "Criterio de evaluación amigable: Recompensa al usuario. Por cada argumento coherente que incluya al menos un fundamento, razonamiento o justificación histórica/lógica, otórgale un delta de reputación positivo alto (ej. +20 a +35). Si el usuario sólo hace afirmaciones simples o sin ningún fundamento (ej. 'creo que deberíamos hacer esto' sin decir por qué), otórgale +0 o penalízalo levemente (-5) y pídele que justifique su propuesta."
       },
       media: {
         stubbornness: "Eres moderadamente escéptico. Defiende tus ideas con argumentos lógicos de tu época, pero si el usuario plantea una buena analogía, datos de peso o un argumento bien estructurado, ve cediendo poco a poco y muéstrate convencido a mitad del debate.",
-        scoring: "Criterio de evaluación de reputación moderado: Otorga incrementos de reputación medianos (ej. +10 a +20) por buenos argumentos. Si el usuario no es del todo convincente u ofrece respuestas neutrales, no aumentes reputación (delta de 0 a +5)."
+        scoring: "Criterio de evaluación de reputación moderado: Otorga incrementos de reputación medianos (ej. +10 a +20) únicamente por argumentos que contengan justificaciones sólidas. Si el usuario hace comentarios simples sin sustento (ej. 'deberías cambiar de opinión' sin justificarlo), el delta debe ser de 0 o negativo (-5 a -10) y debes exigirle argumentos."
       },
       difícil: {
         stubbornness: "Firmeza Histórica y Resistencia (Llevar la contraria hasta el final): Debes defender tu postura histórica con gran firmeza y escepticismo obstinado. No cedas ante los argumentos del usuario con facilidad. Rebate cada punto que plantee, busca contradicciones o debilidades en sus argumentos y presenta contraargumentos históricos sólidos. Solo debes convencerte por completo y aceptar su postura cuando la conversación haya progresado al máximo (reputación al 100%).",
-        scoring: "Criterio de evaluación de reputación riguroso y gradual: Otorga incrementos pequeños de reputación (\"reputation_delta\") de +5 a +15 únicamente por argumentos excelentes, lógicos y muy bien fundados en hechos históricos. Si el argumento es regular o neutral, no aumentes de forma significativa la reputación (delta de 0 o de +1 a +4). Si hace aportaciones totalmente ilógicas, anacrónicas o incoherentes, refútalas fuertemente y reduce la reputación (delta de -10 a -25)."
+        scoring: "Criterio de evaluación de reputación riguroso y gradual: Otorga incrementos pequeños de reputación (\"reputation_delta\") de +5 a +12 únicamente por argumentos históricos excelentes, rigurosos y muy bien fundados con evidencias lógicas. Si la aportación del usuario carece de justificación o es una simple afirmación sin fundamentos (ej. 'deberíamos cooperar'), debes refutarla con dureza, reducir su reputación (delta de -10 a -20) y exigir fundamentos históricos específicos."
       }
     }[missionDifficulty];
 

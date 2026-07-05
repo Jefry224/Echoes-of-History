@@ -170,6 +170,7 @@ export function CallInterface({ character, mode, missionText, missionDifficulty 
           <button
             onClick={() => {
               playHangUpSound();
+              interruptSpeech();
               onBack();
             }}
             className="flex items-center gap-2 text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer"
