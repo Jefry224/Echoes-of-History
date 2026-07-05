@@ -9,39 +9,9 @@ interface VideoPuppetProps {
 }
 
 export function VideoPuppet({ character, isSpeaking, speakingLevel, emotion = "base" }: VideoPuppetProps) {
-  // Video paths based on character id
-  const listeningVideoSrc = `/assets/videos/${character.id}_escuchando.mp4`;
-  const speakingVideoSrc = `/assets/videos/${character.id}_hablando.mp4`;
-
   return (
     <div className="relative w-full h-full bg-neutral-950 flex items-center justify-center overflow-hidden">
       
-      {/* 
-        MÉTODO MARIONETA (Puppet Method):
-        - Video A (escuchando.mp4): loops mouth closed. Opacity = 1 when quiet.
-        - Video B (hablando.mp4): loops mouth moving. Opacity = 1 when speaking.
-        - Instant 0ms opacity switch controlled by isSpeaking.
-      */}
-      <video
-        src={listeningVideoSrc}
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-0 -z-20"
-        style={{ opacity: isSpeaking ? 0 : 1 }}
-        loop
-        muted
-        playsInline
-        autoPlay
-      />
-      
-      <video
-        src={speakingVideoSrc}
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-0 -z-20"
-        style={{ opacity: isSpeaking ? 1 : 0 }}
-        loop
-        muted
-        playsInline
-        autoPlay
-      />
-
       {/* 
         3D INTERACTIVE MODEL LAYER:
         - Primary visual asset rendering the real-time lip-synced and interactive 3D head scene!

@@ -7,16 +7,21 @@ import { ParticleBackground } from "@/components/ParticleBackground";
 import { CharacterSelector } from "@/components/app/CharacterSelector";
 import { CallInterface } from "@/components/app/CallInterface";
 import { RewardsPanel } from "@/components/app/RewardsPanel";
+import { DebateInterface } from "@/components/app/DebateInterface";
 import type { Character } from "@/lib/characters";
 import "./index.css";
 
 function App() {
   const [view, setView] = useState<"landing" | "app">("landing");
-  const [appState, setAppState] = useState<"selector" | "call" | "rewards">("selector");
+  const [appState, setAppState] = useState<"selector" | "call" | "rewards" | "debate">("selector");
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
   const [mode, setMode] = useState<"casual" | "mission">("casual");
   const [activeMission, setActiveMission] = useState<string | undefined>(undefined);
-  
+
+  // Debate states
+  const [debateCharacters, setDebateCharacters] = useState<[Character, Character] | null>(null);
+  const [debateTopic, setDebateTopic] = useState<string>("");
+
   // Evaluation & Reward states
   const [lastTranscript, setLastTranscript] = useState<{ role: string; content: string }[]>([]);
   const [lastScore, setLastScore] = useState(0);
@@ -38,6 +43,12 @@ function App() {
     setAppState("call");
   };
 
+  const handleStartDebate = (char1: Character, char2: Character, topic: string) => {
+    setDebateCharacters([char1, char2]);
+    setDebateTopic(topic);
+    setAppState("debate");
+  };
+
   const handleCallFinished = (
     transcript: { role: string; content: string }[],
     score: number,
@@ -53,7 +64,7 @@ function App() {
     <main className="relative min-h-screen bg-transparent text-white overflow-x-hidden font-sans">
       {/* Global modern white particles and dark veil waves background */}
       <ParticleBackground />
-      
+
       {view === "landing" ? (
         <>
           <Hero onEnterMuseum={handleEnterApp} />
@@ -68,9 +79,10 @@ function App() {
         /* App View Navigator */
         <div className="relative min-h-screen z-10">
           {appState === "selector" && (
-            <CharacterSelector 
-              onBack={handleBackToLanding} 
-              onStart={handleStartCall} 
+            <CharacterSelector
+              onBack={handleBackToLanding}
+              onStart={handleStartCall}
+              onStartDebate={handleStartDebate}
             />
           )}
 
@@ -81,6 +93,14 @@ function App() {
               missionText={activeMission}
               onBack={() => setAppState("selector")}
               onHangUp={handleCallFinished}
+            />
+          )}
+
+          {appState === "debate" && debateCharacters && (
+            <DebateInterface
+              characters={debateCharacters}
+              topic={debateTopic}
+              onBack={() => setAppState("selector")}
             />
           )}
 

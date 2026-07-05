@@ -40,7 +40,14 @@ const SIMULATED_REPLIES: Record<string, string[]> = {
     "Si quieres entender el universo, piensa en términos de energía, frecuencia y vibración.",
     "El futuro demostrará la validez de mis inventos inalámbricos. La ciencia avanza paso a paso.",
   ],
+  "michael-jackson": [
+    "La música es el lenguaje del alma. Cuando canto, el mundo entero puede escuchar lo que las palabras no pueden decir.",
+    "Heal the world, make it a better place. Eso es todo lo que he intentado hacer con mi arte.",
+    "No importa tu raza, tu color o tu credo. En la pista de baile, todos somos iguales.",
+  ],
 };
+
+const SINGING_KEYWORDS = /\b(canta|cantar|cántame|sing|song|canción|bailar|dance|beat it|thriller|billie jean|smooth criminal|black or white)\b/i;
 
 const SIMULATED_QUESTIONS = [
   "¿Cuál es el secreto de tus descubrimientos?",
@@ -95,25 +102,25 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
-        } catch (e) {}
+        } catch (e) { }
       }
     };
   }, []);
 
-  const simulateSpeech = useCallback((text: string) => {
+  const simulateSpeech = useCallback((text: string, voiceOverrides?: { stability?: number; similarity_boost?: number; style?: number }) => {
     // Mark as "preparing" – audio is being fetched, text not yet revealed
     setStatus("preparing");
     setSpeakingLevel(0);
     // Store the pending text so we can flush it once audio is ready
     pendingMessageRef.current = text;
-    
+
     // Stop any existing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
-    
+
     /** Flush pending text into the visible message list */
     const revealText = () => {
       if (pendingMessageRef.current !== null) {
@@ -144,19 +151,33 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(fallbackText);
         utterance.lang = "es-ES";
-        
+
+        // Prevent garbage collection by keeping reference on window
+        (window as any)._activeUtterances = (window as any)._activeUtterances || [];
+        (window as any)._activeUtterances.push(utterance);
+
+        const removeUtterance = () => {
+          if ((window as any)._activeUtterances) {
+            (window as any)._activeUtterances = (window as any)._activeUtterances.filter(
+              (u: any) => u !== utterance
+            );
+          }
+        };
+
         utterance.onend = () => {
+          removeUtterance();
           if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
           setSpeakingLevel(0);
           setStatus("idle");
         };
-        
+
         utterance.onerror = () => {
+          removeUtterance();
           if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
           setSpeakingLevel(0);
           setStatus("idle");
         };
-        
+
         window.speechSynthesis.speak(utterance);
       } else {
         const readDuration = Math.max(3000, fallbackText.length * 60);
@@ -171,7 +192,7 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
     const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
     if (ELEVENLABS_API_KEY) {
-      const voiceId = character.voiceId || "21m00Tcm4TlvDq8ikWAM"; 
+      const voiceId = character.voiceId || "21m00Tcm4TlvDq8ikWAM";
       fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
         headers: {
@@ -183,56 +204,57 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
           text: text,
           model_id: "eleven_multilingual_v2",
           voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
+            stability: voiceOverrides?.stability ?? 0.5,
+            similarity_boost: voiceOverrides?.similarity_boost ?? 0.75,
+            style: voiceOverrides?.style ?? 0,
           }
         }),
       })
-      .then(res => {
-        if (!res.ok) throw new Error("ElevenLabs API failed");
-        return res.blob();
-      })
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
+        .then(res => {
+          if (!res.ok) throw new Error("ElevenLabs API failed");
+          return res.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
 
-        const handleAudioReady = () => {
-          revealText();
-          startLipSync();
-        };
+          const handleAudioReady = () => {
+            revealText();
+            startLipSync();
+          };
 
-        if (audio.readyState >= 2) {
-          handleAudioReady();
-        } else {
-          audio.addEventListener("canplay", handleAudioReady, { once: true });
-        }
+          if (audio.readyState >= 2) {
+            handleAudioReady();
+          } else {
+            audio.addEventListener("canplay", handleAudioReady, { once: true });
+          }
 
-        audio.onended = () => {
-          if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
-          setSpeakingLevel(0);
-          setStatus("idle");
-          URL.revokeObjectURL(url);
-        };
+          audio.onended = () => {
+            if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+            setSpeakingLevel(0);
+            setStatus("idle");
+            URL.revokeObjectURL(url);
+          };
 
-        audio.onerror = () => {
-          if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
-          setSpeakingLevel(0);
-          setStatus("idle");
-          URL.revokeObjectURL(url);
-        };
+          audio.onerror = () => {
+            if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+            setSpeakingLevel(0);
+            setStatus("idle");
+            URL.revokeObjectURL(url);
+          };
 
-        audio.play().catch(e => {
-          console.error("Error playing audio", e);
-          if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
-          setSpeakingLevel(0);
-          setStatus("idle");
+          audio.play().catch(e => {
+            console.error("Error playing audio", e);
+            if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
+            setSpeakingLevel(0);
+            setStatus("idle");
+          });
+        })
+        .catch(e => {
+          console.error(e);
+          fallbackSpeech(text);
         });
-      })
-      .catch(e => {
-        console.error(e);
-        fallbackSpeech(text);
-      });
     } else {
       fallbackSpeech(text);
     }
@@ -249,23 +271,34 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
 
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
+    const isMJSinging = character.id === "michael-jackson" && SINGING_KEYWORDS.test(q);
+
     const triggerLocalFallback = () => {
       const characterReplies = SIMULATED_REPLIES[character.id] || [character.greeting];
       const r = characterReplies[replyIndex.current];
       replyIndex.current = (replyIndex.current + 1) % characterReplies.length;
 
-      // Simulated delta for fallback
       const localDelta = Math.min(10, Math.max(-5, Math.floor(q.length / 8) - 4));
       setReputation((prev) => Math.min(100, Math.max(0, prev + localDelta)));
 
-      // Do NOT add to messages yet — simulateSpeech will reveal text when audio starts
-      simulateSpeech(r);
+      if (isMJSinging) {
+        simulateSpeech(
+          "This is it! You want me to sing? Alright... People always told me, be careful what you do. Don't go around breaking young girls' hearts... Hee-hee!",
+          { stability: 0.3, similarity_boost: 0.9, style: 0.6 }
+        );
+      } else {
+        simulateSpeech(r);
+      }
     };
 
     if (apiKey) {
+      const singingInstruction = isMJSinging
+        ? `The user is asking you to sing. RESPOND ENTIRELY IN ENGLISH. Improvise 4-6 lines of original lyrics in your musical style — soulful, emotional, rhythmic. Keep it short and punchy. Do NOT translate to Spanish. Stay fully in character as Michael Jackson performing live.`
+        : "";
+
       let systemPrompt = `Eres el personaje histórico: ${character.name}. ${character.persona}
 
-Debes responder siempre manteniendo tu personalidad histórica, vocabulario adecuado de tu época y en idioma Español.
+${singingInstruction ? singingInstruction + "\n\n" : ""}${isMJSinging ? "Respond in English only for this turn." : "Debes responder siempre manteniendo tu personalidad histórica, vocabulario adecuado de tu época y en idioma Español."}
 Mantén tus respuestas ricas en contenido histórico (de 3 a 5 oraciones largas), para que den suficiente detalle y no sean demasiado cortas.
 Refleja tu estado emocional a través de la puntuación en el texto para que la voz de ElevenLabs responda con la entonación adecuada (por ejemplo, usando "¡!" para alegría, pausas y puntos suspensivos para tristeza, u oraciones firmes y fuertes para enojo).
 
@@ -318,28 +351,28 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
           ],
         }),
       })
-      .then((res) => {
-        if (!res.ok) throw new Error("OpenAI request failed");
-        return res.json();
-      })
-      .then((data) => {
-        const content = data.choices?.[0]?.message?.content;
-        if (!content) throw new Error("Empty content from OpenAI");
+        .then((res) => {
+          if (!res.ok) throw new Error("OpenAI request failed");
+          return res.json();
+        })
+        .then((data) => {
+          const content = data.choices?.[0]?.message?.content;
+          if (!content) throw new Error("Empty content from OpenAI");
 
-        const parsed = JSON.parse(content);
-        const replyText = parsed.response_text || "Disculpa, no logré entenderte.";
-        const delta = Number(parsed.reputation_delta) || 0;
-        const targetEmotion = parsed.emotion || "base";
+          const parsed = JSON.parse(content);
+          const replyText = parsed.response_text || "Disculpa, no logré entenderte.";
+          const delta = Number(parsed.reputation_delta) || 0;
+          const targetEmotion = parsed.emotion || "base";
 
-        setReputation((prev) => Math.min(100, Math.max(0, prev + delta)));
-        setEmotion(targetEmotion as any);
-        // Do NOT add to messages yet — simulateSpeech will reveal text when audio starts
-        simulateSpeech(replyText);
-      })
-      .catch((err) => {
-        console.error("OpenAI Error, falling back:", err);
-        triggerLocalFallback();
-      });
+          setReputation((prev) => Math.min(100, Math.max(0, prev + delta)));
+          setEmotion(targetEmotion as any);
+          // Do NOT add to messages yet — simulateSpeech will reveal text when audio starts
+          simulateSpeech(replyText);
+        })
+        .catch((err) => {
+          console.error("OpenAI Error, falling back:", err);
+          triggerLocalFallback();
+        });
     } else {
       triggerLocalFallback();
     }
@@ -441,7 +474,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
-    
+
     setMessages([]);
     setSpeakingLevel(0);
     setErrorMsg(null);
@@ -480,7 +513,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
 
   const resumeSpeech = useCallback(() => {
     if (audioRef.current && audioRef.current.paused) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => { });
     } else if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }

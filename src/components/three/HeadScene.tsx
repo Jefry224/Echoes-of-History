@@ -42,7 +42,7 @@ export function HeadScene({
   return (
     <div className={className}>
       <Canvas
-        shadows={high}
+        shadows={high ? "percentage" : undefined}
         frameloop={frameloop}
         dpr={high ? [1, 1.75] : 1}
         camera={{ position: [0, 0, cameraZ], fov: 40 }}
