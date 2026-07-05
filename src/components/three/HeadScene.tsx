@@ -34,6 +34,8 @@ export function HeadScene({
   emotion = "base",
 }: HeadSceneProps) {
   const high = quality === "high";
+  const fov = modelUrl ? 56 : 36;
+  const effectiveCameraZ = modelUrl ? Math.min(cameraZ, 4.5) : cameraZ;
 
   const avatar = modelUrl ? (
     <CharacterModel
@@ -67,7 +69,7 @@ export function HeadScene({
         shadows={high ? { type: THREE.PCFShadowMap } : false}
         frameloop={frameloop}
         dpr={high ? [1, 1.75] : 1}
-        camera={{ position: [0, 0, cameraZ], fov: 42 }}
+        camera={{ position: [0, 0, effectiveCameraZ], fov }}
         gl={{ antialias: high, alpha: true, powerPreference: "low-power" }}
         performance={{ min: 0.5 }}
       >

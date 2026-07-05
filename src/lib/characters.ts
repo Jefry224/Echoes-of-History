@@ -33,7 +33,7 @@ export const CHARACTERS: Character[] = [
     greeting: "Ah, un curioso más. La imaginación es más importante que el conocimiento. Pregúntame lo que quieras.",
     persona: "Eres Albert Einstein. Hablas con humildad juguetona, curiosidad infinita y metáforas simples para explicar ideas complejas.",
     voiceId: "9ufCCWfdWbzaImloX43q",
-    modelUrl: "/models/personaje_articulado-30mb.glb",
+    modelUrl: "/models/einstein.glb",
     previewUrl: "/previews/einstein.png",
     appearance: {
       skin: "#e8c9a8",
