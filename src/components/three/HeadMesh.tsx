@@ -10,6 +10,7 @@ interface HeadMeshProps {
   targetPosition?: [number, number, number];
   targetScale?: number;
   emotion?: "base" | "feliz" | "enojado" | "triste";
+  speakAnimation?: "jaw" | "brows";
 }
 
 function HairTuft({
@@ -130,11 +131,14 @@ export function HeadMesh({
   targetPosition = [0, 0, 0],
   targetScale = 1.1,
   emotion = "base",
+  speakAnimation = "brows",
 }: HeadMeshProps) {
   const group = useRef<THREE.Group>(null);
   const leftEye = useRef<THREE.Group>(null);
   const rightEye = useRef<THREE.Group>(null);
   const jaw = useRef<THREE.Mesh>(null);
+  const leftBrow = useRef<THREE.Mesh>(null);
+  const rightBrow = useRef<THREE.Mesh>(null);
   const { pointer } = useThree();
 
   useFrame((state) => {
@@ -166,9 +170,19 @@ export function HeadMesh({
     if (leftEye.current) leftEye.current.position.set(-0.28 + ex, 0.12 + ey, 0.82);
     if (rightEye.current) rightEye.current.position.set(0.28 + ex, 0.12 + ey, 0.82);
     if (jaw.current) {
-      const openTarget = 0.05 + speaking * 0.32 + (speaking > 0.02 ? Math.sin(t * 22) * 0.06 * speaking : 0);
+      const openTarget = speakAnimation === "jaw"
+        ? 0.05 + speaking * 0.32 + (speaking > 0.02 ? Math.sin(t * 22) * 0.06 * speaking : 0)
+        : 0.05;
       const s = jaw.current.scale;
       s.y += (Math.max(0.08, openTarget) - s.y) * 0.4;
+    }
+    if (leftBrow.current && rightBrow.current) {
+      const isTalking = speaking > 0.02;
+      const browYTarget = eyebrowY + (speakAnimation === "brows" && isTalking
+        ? Math.abs(Math.sin(t * 10)) * 0.12 * speaking
+        : 0);
+      leftBrow.current.position.y += (browYTarget - leftBrow.current.position.y) * 0.8;
+      rightBrow.current.position.y += (browYTarget - rightBrow.current.position.y) * 0.8;
     }
   });
 
@@ -259,11 +273,11 @@ export function HeadMesh({
       </group>
 
       {/* Cejas */}
-      <mesh position={[-0.28, eyebrowY, 0.86]} rotation={leftEyebrowRotation}>
+      <mesh ref={leftBrow} position={[-0.28, eyebrowY, 0.86]} rotation={leftEyebrowRotation}>
         <boxGeometry args={[0.28, 0.05, 0.08]} />
         <meshStandardMaterial color={appearance.hair} roughness={0.9} />
       </mesh>
-      <mesh position={[0.28, eyebrowY, 0.86]} rotation={rightEyebrowRotation}>
+      <mesh ref={rightBrow} position={[0.28, eyebrowY, 0.86]} rotation={rightEyebrowRotation}>
         <boxGeometry args={[0.28, 0.05, 0.08]} />
         <meshStandardMaterial color={appearance.hair} roughness={0.9} />
       </mesh>

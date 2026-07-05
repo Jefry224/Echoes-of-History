@@ -9,6 +9,7 @@ interface CharacterModelProps {
   targetPosition?: [number, number, number];
   targetScale?: number;
   emotion?: "base" | "feliz" | "enojado" | "triste";
+  speakAnimation?: "jaw" | "brows";
 }
 
 function normalizeModel(scene: THREE.Object3D) {
@@ -51,6 +52,7 @@ export function CharacterModel({
   targetPosition = [0, 0, 0],
   targetScale = 1,
   emotion = "base",
+  speakAnimation = "brows",
 }: CharacterModelProps) {
   const group = useRef<THREE.Group>(null);
   const { scene } = useGLTF(url);
@@ -113,36 +115,25 @@ export function CharacterModel({
       const infl = morphMesh.morphTargetInfluences;
 
       if (jawIdx >= 0) {
-        // Amplify to max=1 so even a small vertex delta is visible
-        const jawTarget = isTalking
+        const jawTarget = speakAnimation === "jaw" && isTalking
           ? Math.min(1, speaking * 1.3 + Math.abs(Math.sin(t * 16)) * 0.4 * speaking)
           : 0;
         infl[jawIdx] += (jawTarget - infl[jawIdx]) * 0.3;
-
-        // Log transition open
-        if (isTalking && infl[jawIdx] > 0.05 && !g.userData._jawLogged) {
-          console.log("[CharacterModel] jawOpen activado — speaking:", speaking.toFixed(2), "| infl:", infl[jawIdx].toFixed(3));
-          g.userData._jawLogged = true;
-        }
-        if (!isTalking) g.userData._jawLogged = false;
-
-        // Periodic log every ~2s while talking to trace that influence keeps growing
-        g.userData._logTimer = (g.userData._logTimer ?? 0) + 1;
-        if (isTalking && g.userData._logTimer % 120 === 0) {
-          console.log("[CharacterModel] jaw periódico — infl:", infl[jawIdx].toFixed(3), "| speaking:", speaking.toFixed(2));
-        }
       }
 
       if (browsIdx >= 0) {
-        const browsTarget =
-          emotion === "feliz"   ? 0.9  :
-          emotion === "enojado" ? 0.0  :
-          emotion === "triste"  ? 0.5  :
+        const browsBase =
+          emotion === "feliz"   ? 0.9 :
+          emotion === "enojado" ? 0.0 :
+          emotion === "triste"  ? 0.5 :
           0.2;
+        const browsTarget = speakAnimation === "brows" && isTalking
+          ? Math.min(1, browsBase + Math.abs(Math.sin(t * 10)) * 0.55 * speaking)
+          : browsBase;
         infl[browsIdx] += (browsTarget - infl[browsIdx]) * 0.06;
       }
     } else if (isTalking && !g.userData._noMorphWarned) {
-      console.warn("[CharacterModel] ⚠️ Sin morph targets — solo animación procedural activa. ¿Está cargado personaje_articulado.glb?");
+      console.warn("[CharacterModel] ⚠️ Sin morph targets — solo animación procedural activa.");
       g.userData._noMorphWarned = true;
     }
   });

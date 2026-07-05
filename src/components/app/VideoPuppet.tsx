@@ -26,6 +26,7 @@ export function VideoPuppet({ character, speakingLevel, emotion = "base", fillHe
           float
           cameraZ={character.modelUrl ? 5.5 : 4.8}
           emotion={emotion}
+          speakAnimation={character.id === "einstein" ? "jaw" : "brows"}
         />
       </div>
 

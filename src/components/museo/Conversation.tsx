@@ -181,8 +181,8 @@ export function Conversation({ character, onBack }: ConversationProps) {
                   <div 
                     className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                       m.role === "user" 
-                        ? "bg-white text-black font-sans font-medium rounded-tr-none max-w-[80%]" 
-                        : "text-neutral-200 font-serif italic max-w-[85%]"
+                        ? "bg-[#0d1117]/95 text-neutral-200 font-sans font-medium rounded-tr-none max-w-[80%]" 
+                        : "bg-neutral-900/90 text-neutral-200 font-serif italic max-w-[85%]"
                     }`}
                   >
                     {m.content}
@@ -309,6 +309,7 @@ export function Conversation({ character, onBack }: ConversationProps) {
             className="h-full w-full"
             float
             cameraZ={3.8}
+            speakAnimation={character.id === "einstein" ? "jaw" : "brows"}
           />
         </div>
 

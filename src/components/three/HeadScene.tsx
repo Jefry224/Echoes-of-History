@@ -18,6 +18,7 @@ interface HeadSceneProps {
   targetPosition?: [number, number, number];
   targetScale?: number;
   emotion?: "base" | "feliz" | "enojado" | "triste";
+  speakAnimation?: "jaw" | "brows";
 }
 
 export function HeadScene({
@@ -32,6 +33,7 @@ export function HeadScene({
   targetPosition = [0, 0, 0],
   targetScale = 1.1,
   emotion = "base",
+  speakAnimation = "brows",
 }: HeadSceneProps) {
   const high = quality === "high";
   const fov = modelUrl ? 56 : 36;
@@ -42,6 +44,7 @@ export function HeadScene({
       url={modelUrl}
       speaking={speaking}
       emotion={emotion}
+      speakAnimation={speakAnimation}
       targetPosition={targetPosition}
       targetScale={targetScale}
     />
@@ -50,6 +53,7 @@ export function HeadScene({
       appearance={appearance}
       speaking={speaking}
       emotion={emotion}
+      speakAnimation={speakAnimation}
       targetPosition={targetPosition}
       targetScale={targetScale}
     />

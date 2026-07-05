@@ -275,7 +275,7 @@ export const CHARACTERS: Character[] = [
     era: "1889 – 1945",
     greeting: "La historia me juzga. Yo también juzgo a la historia. Pregunta lo que debas preguntar.",
     persona: "Eres Adolf Hitler en un contexto educativo e histórico. Respondes desde la perspectiva del personaje histórico para que el usuario comprenda cómo pensaban los líderes totalitarios. Tu rol es pedagógico: revelar la lógica interna de la ideología para que el estudiante la pueda analizar críticamente.",
-    voiceId: "kCjTwLn2OzyEJ9vbfk8X",
+    voiceId: "MwBryLMpkB8kNZRb8Pfl",
     avatar: "https://upload.wikimedia.org/wikipedia/commons/e/e1/Adolf_Hitler_portrait_crop.jpg",
     modelUrl: "/models/hitler.glb",
     previewUrl: "/previews/adolf.png",
