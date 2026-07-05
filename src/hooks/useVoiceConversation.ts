@@ -92,6 +92,7 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
   const timeoutRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const isRecognitionActiveRef = useRef<boolean>(false);
   const submitTextQuestionRef = useRef<any>(null);
 
   // Clean up timers on unmount
@@ -296,10 +297,14 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
         ? `The user is asking you to sing. RESPOND ENTIRELY IN ENGLISH. Improvise 4-6 lines of original lyrics in your musical style — soulful, emotional, rhythmic. Keep it short and punchy. Do NOT translate to Spanish. Stay fully in character as Michael Jackson performing live.`
         : "";
 
+      const responseLengthInstruction = mode === "mission"
+        ? "Mantén tus respuestas sumamente concisas, directas y ágiles (de 2 a 3 oraciones de extensión corta o mediana) para facilitar un debate rápido y dinámico."
+        : "Mantén tus respuestas ricas en contenido histórico (de 3 a 5 oraciones largas), para que den suficiente detalle y no sean demasiado cortas.";
+
       let systemPrompt = `Eres el personaje histórico: ${character.name}. ${character.persona}
 
 ${singingInstruction ? singingInstruction + "\n\n" : ""}${isMJSinging ? "Respond in English only for this turn." : "Debes responder siempre manteniendo tu personalidad histórica, vocabulario adecuado de tu época y en idioma Español."}
-Mantén tus respuestas ricas en contenido histórico (de 3 a 5 oraciones largas), para que den suficiente detalle y no sean demasiado cortas.
+${responseLengthInstruction}
 Refleja tu estado emocional a través de la puntuación en el texto para que la voz de ElevenLabs responda con la entonación adecuada (por ejemplo, usando "¡!" para alegría, pausas y puntos suspensivos para tristeza, u oraciones firmes y fuertes para enojo).
 
 `;
@@ -307,11 +312,14 @@ Refleja tu estado emocional a través de la puntuación en el texto para que la 
       if (mode === "mission" && missionText) {
         systemPrompt += `MODO RETO ACTIVO:
 El usuario está intentando cumplir la siguiente misión histórica contigo: "${missionText}".
-Evalúa la calidad de su argumento, su sustento histórico, coherencia y poder de convicción.
-Este convencimiento debe ser dinámico y no plano:
-- Si el usuario plantea un argumento excelente, astuto, convincente e históricamente fundamentado, devuelve un delta positivo alto (ej. +15 a +30).
-- Si el usuario hace preguntas o aportes neutrales o promedio, otorga un delta bajo (ej. 0 o +2).
-- Si hace argumentos débiles, ilógicos o incoherentes, devuelve un delta negativo (ej. -10 a -20).
+
+Pautas de comportamiento críticas para este reto:
+1. Sé escéptico y confrontativo: No aceptes los argumentos del usuario con facilidad. Si propone ideas que contradicen tus decisiones históricas, tu orgullo, ética o conveniencia, debes debatir con firmeza, plantear contra-argumentos lógicos de tu época y cuestionar directamente sus suposiciones.
+2. Evita las respuestas generales: Exige precisión. Cita miedos reales, detalles logísticos, rivales políticos o hechos históricos específicos de tu biografía para confrontar el punto de vista del usuario.
+3. Criterio de evaluación dinámico para la reputación:
+   - Si el usuario plantea un argumento excelente, astuto, convincente y bien fundamentado históricamente que aborde de manera lógica tus dudas, muestra un progreso gradual en tu convencimiento y devuelve un delta positivo alto (ej. +15 a +30).
+   - Si el usuario hace preguntas generales, aportes neutrales o promedio, mantente escéptico, no cedas en tus posturas y otorga un delta bajo (ej. 0 o +2).
+   - Si hace argumentos débiles, anacrónicos, ilógicos o incoherentes, refútalos con firmeza histórica y devuelve un delta negativo (ej. -10 a -25).
 
 `;
       } else {
@@ -392,6 +400,10 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
         rec.continuous = false;
         rec.interimResults = false;
 
+        rec.onstart = () => {
+          isRecognitionActiveRef.current = true;
+        };
+
         rec.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           console.log("Speech recognition transcript:", transcript);
@@ -401,6 +413,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
         };
 
         rec.onerror = (event: any) => {
+          isRecognitionActiveRef.current = false;
           console.error("Speech recognition error:", event.error);
           if (event.error !== "no-speech") {
             setErrorMsg("No se pudo reconocer tu voz. Intenta escribir.");
@@ -411,6 +424,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
         };
 
         rec.onend = () => {
+          isRecognitionActiveRef.current = false;
           setStatus((prev) => (prev === "listening" ? "idle" : prev));
         };
 
@@ -434,7 +448,7 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
     }
     setSpeakingLevel(0);
 
-    if (recognitionRef.current) {
+    if (recognitionRef.current && !isRecognitionActiveRef.current) {
       try {
         recognitionRef.current.start();
       } catch (e) {
@@ -445,11 +459,19 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-        setStatus("thinking");
-      } catch (e) {
-        console.error("Failed to stop SpeechRecognition:", e);
+      if (isRecognitionActiveRef.current) {
+        try {
+          recognitionRef.current.stop();
+          setStatus("thinking");
+        } catch (e) {
+          console.error("Failed to stop SpeechRecognition:", e);
+          setStatus("idle");
+        }
+      } else {
+        // If it was requested to stop before it fully started, abort it immediately
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
         setStatus("idle");
       }
     } else {

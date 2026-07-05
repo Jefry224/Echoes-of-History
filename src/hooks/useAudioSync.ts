@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 interface AudioSyncProps {
   isCharacterSpeaking: boolean;
   onInterrupt: () => void;
+  enabled?: boolean;
 }
 
-export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProps) {
+export function useAudioSync({ isCharacterSpeaking, onInterrupt, enabled = true }: AudioSyncProps) {
   const [micVolume, setMicVolume] = useState(0);
   const [isUserTalking, setIsUserTalking] = useState(false);
 
@@ -15,10 +16,15 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
   const speakTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
   const isCharacterSpeakingRef = useRef(isCharacterSpeaking);
+  const enabledRef = useRef(enabled);
 
   useEffect(() => {
     isCharacterSpeakingRef.current = isCharacterSpeaking;
   }, [isCharacterSpeaking]);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   // Request mic access and start volume monitoring once
   useEffect(() => {
@@ -61,7 +67,7 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
           const volumeNormalized = average / 255; // 0 to 1
           setMicVolume(volumeNormalized);
 
-          const threshold = 0.08; // sensitivity threshold
+          const threshold = 0.20; // sensitivity threshold (increased from 0.08)
 
           if (volumeNormalized > threshold) {
             // User is actively talking
@@ -69,10 +75,10 @@ export function useAudioSync({ isCharacterSpeaking, onInterrupt }: AudioSyncProp
               speakTimeRef.current = Date.now();
             } else {
               const speakDuration = Date.now() - speakTimeRef.current;
-              // Intelligent Interruption: user speaks for >300ms while character speaks
-              if (speakDuration > 300) {
+              // Intelligent Interruption: user speaks for >700ms (increased from 300ms) while character speaks
+              if (speakDuration > 700) {
                 setIsUserTalking(true);
-                if (isCharacterSpeakingRef.current) {
+                if (isCharacterSpeakingRef.current && enabledRef.current) {
                   onInterrupt(); // Interrupt the character
                 }
               }

@@ -68,10 +68,13 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
     emotion
   } = useVoiceConversation(character, mode, missionText);
 
+  const [autoInterrupt, setAutoInterrupt] = useState(false);
+
   // Hook up Web Audio VAD monitoring & Intelligent Interruption
   const { micVolume } = useAudioSync({
     isCharacterSpeaking: status === "speaking",
     onInterrupt: interruptSpeech,
+    enabled: autoInterrupt,
   });
 
   const [textInput, setTextInput] = useState("");
@@ -191,35 +194,60 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
         <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center max-w-lg mx-auto text-center space-y-8 py-10">
-              <div className="flex flex-col items-center space-y-3">
+              <div className="flex flex-col items-center space-y-4">
                 <div 
                   className="flex size-14 items-center justify-center rounded-full border-2 text-2xl font-mono font-black"
                   style={{ borderColor: character.appearance.accent }}
                 >
                   {character.name.charAt(0)}
                 </div>
-                <h2 className="text-2xl font-black uppercase tracking-tight text-white">Conversación Histórica</h2>
-                <p className="text-sm text-neutral-400 font-sans leading-relaxed">
-                  {character.greeting}
-                </p>
+                
+                {mode === "mission" ? (
+                  <>
+                    <span className="text-[10px] font-mono text-amber-500 uppercase tracking-widest font-black bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                      ⚡ Misión Temporal Activa
+                    </span>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">Objetivo de Certificación</h2>
+                    <div className="p-5 rounded-2xl border border-neutral-800 bg-neutral-950/60 max-w-md">
+                      <p className="text-xs text-neutral-400 font-mono uppercase tracking-wider mb-2 font-bold">
+                        Tu Tarea con {character.name}:
+                      </p>
+                      <p className="text-sm text-neutral-200 font-serif italic leading-relaxed">
+                        "{missionText}"
+                      </p>
+                    </div>
+                    <p className="text-xs text-neutral-500 font-sans max-w-xs leading-normal">
+                      Sustenta tus argumentos con precisión histórica. Debes convencer al personaje y alcanzar al menos 65% de aprobación para certificar la misión.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">Conversación Histórica</h2>
+                    <p className="text-sm text-neutral-400 font-sans leading-relaxed">
+                      {character.greeting}
+                    </p>
+                  </>
+                )}
               </div>
 
-              <div className="space-y-3 text-left">
-                <p className="text-xs font-mono text-neutral-500 uppercase tracking-wider flex items-center gap-2 font-bold">
-                  <Sparkles className="size-3" /> Preguntas sugeridas
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {activeSuggestions.map((promptText, i) => (
-                    <button
-                      key={i}
-                      onClick={() => submitTextQuestion(promptText)}
-                      className="p-3.5 text-xs text-left rounded-2xl border border-neutral-800 bg-black/60 hover:bg-neutral-900 text-neutral-300 hover:text-white transition-all cursor-pointer font-sans leading-snug shadow-sm"
-                    >
-                      {promptText}
-                    </button>
-                  ))}
+              {mode !== "mission" && (
+                <div className="space-y-3 text-left">
+                  <p className="text-xs font-mono text-neutral-500 uppercase tracking-wider flex items-center gap-2 font-bold">
+                    <Sparkles className="size-3" /> Preguntas sugeridas
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {activeSuggestions.map((promptText, i) => (
+                      <button
+                        key={i}
+                        onClick={() => submitTextQuestion(promptText)}
+                        className="p-3.5 text-xs text-left rounded-2xl border border-neutral-800 bg-black/60 hover:bg-neutral-900 text-neutral-300 hover:text-white transition-all cursor-pointer font-sans leading-snug shadow-sm"
+                      >
+                        {promptText}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="space-y-6 max-w-xl mx-auto">
@@ -298,23 +326,19 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
               <div className="absolute right-3 flex items-center gap-2">
                 <button
                   disabled={isBusy}
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    if (!isBusy && status !== "speaking") startListening();
-                  }}
-                  onPointerUp={(e) => {
-                    e.preventDefault();
-                    if (isListening) stopListening();
-                  }}
-                  onPointerLeave={() => {
-                    if (isListening) stopListening();
+                  onClick={() => {
+                    if (status === "listening") {
+                      stopListening();
+                    } else if (status !== "speaking") {
+                      startListening();
+                    }
                   }}
                   className={`flex size-9 items-center justify-center rounded-full border transition-all ${
                     isListening
-                      ? "bg-white text-black border-white scale-105"
+                      ? "bg-red-500 text-white border-red-500 scale-105 animate-pulse"
                       : "bg-transparent border-neutral-700 text-neutral-400 hover:border-white hover:text-white"
                   } cursor-pointer`}
-                  title="Hablar (Voz)"
+                  title={isListening ? "Detener grabación" : "Hablar (Voz)"}
                 >
                   {isListening ? <Square className="size-3.5 fill-current" /> : <Mic className="size-4" />}
                 </button>
@@ -331,7 +355,22 @@ export function CallInterface({ character, mode, missionText, onBack, onHangUp }
 
             {/* Subtext VAD and Volume status */}
             <div className="flex justify-between items-center text-[10px] font-mono text-neutral-500 px-3">
-              <span>{errorMsg ?? STATUS_LABEL[status]}</span>
+              <div className="flex items-center gap-3">
+                <span>{errorMsg ?? STATUS_LABEL[status]}</span>
+                {status !== "listening" && (
+                  <button
+                    onClick={() => setAutoInterrupt(!autoInterrupt)}
+                    className={`px-2 py-0.5 rounded-md border text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                      autoInterrupt 
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30" 
+                        : "bg-transparent text-neutral-600 border-neutral-800 hover:text-neutral-400"
+                    }`}
+                    title="Permite interrumpir al personaje hablando encima de su voz"
+                  >
+                    {autoInterrupt ? "⚡ Interrupción Activa" : "🔇 Interrupción Desactivada"}
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-1">
                 <span className="size-1 bg-white/20 rounded-full transition-all duration-75" style={{ height: `${Math.max(4, micVolume * 36)}px` }} />
                 <span className="size-1 bg-white/20 rounded-full transition-all duration-75" style={{ height: `${Math.max(4, micVolume * 48)}px` }} />
