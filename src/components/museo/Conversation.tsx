@@ -304,6 +304,7 @@ export function Conversation({ character, onBack }: ConversationProps) {
         <div className="w-full h-full">
           <HeadScene
             appearance={character.appearance}
+            modelUrl={character.modelUrl}
             speaking={speakingLevel}
             className="h-full w-full"
             float

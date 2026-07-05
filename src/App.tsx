@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { CharacterPreview } from "@/components/landing/CharacterPreview";
-import { EinsteinGuide } from "@/components/einstein-guide";
 import { ParticleBackground } from "@/components/ParticleBackground";
-import { CharacterSelector } from "@/components/app/CharacterSelector";
-import { CallInterface } from "@/components/app/CallInterface";
-import { RewardsPanel } from "@/components/app/RewardsPanel";
 import type { Character } from "@/lib/characters";
 import "./index.css";
+
+const EinsteinGuide    = lazy(() => import("@/components/einstein-guide").then(m => ({ default: m.EinsteinGuide })));
+const CharacterSelector = lazy(() => import("@/components/app/CharacterSelector").then(m => ({ default: m.CharacterSelector })));
+const CallInterface    = lazy(() => import("@/components/app/CallInterface").then(m => ({ default: m.CallInterface })));
+const RewardsPanel     = lazy(() => import("@/components/app/RewardsPanel").then(m => ({ default: m.RewardsPanel })));
 
 function App() {
   const [view, setView] = useState<"landing" | "app">("landing");
@@ -51,7 +52,6 @@ function App() {
 
   return (
     <main className="relative min-h-screen bg-transparent text-white overflow-x-hidden font-sans">
-      {/* Global modern white particles and dark veil waves background */}
       <ParticleBackground />
       
       {view === "landing" ? (
@@ -62,37 +62,46 @@ function App() {
           <footer className="relative z-30 border-t border-neutral-900 bg-neutral-950/20 px-6 py-10 text-center text-xs font-mono text-neutral-500 uppercase tracking-wider">
             Echoes of History — un portal para conversar con el tiempo.
           </footer>
-          <EinsteinGuide />
+          <Suspense fallback={null}>
+            <EinsteinGuide />
+          </Suspense>
         </>
       ) : (
-        /* App View Navigator */
         <div className="relative min-h-screen z-10">
-          {appState === "selector" && (
-            <CharacterSelector 
-              onBack={handleBackToLanding} 
-              onStart={handleStartCall} 
-            />
-          )}
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <span className="text-xs font-mono text-neutral-500 animate-pulse tracking-widest uppercase">
+                Cargando...
+              </span>
+            </div>
+          }>
+            {appState === "selector" && (
+              <CharacterSelector 
+                onBack={handleBackToLanding} 
+                onStart={handleStartCall} 
+              />
+            )}
 
-          {appState === "call" && activeCharacter && (
-            <CallInterface
-              character={activeCharacter}
-              mode={mode}
-              missionText={activeMission}
-              onBack={() => setAppState("selector")}
-              onHangUp={handleCallFinished}
-            />
-          )}
+            {appState === "call" && activeCharacter && (
+              <CallInterface
+                character={activeCharacter}
+                mode={mode}
+                missionText={activeMission}
+                onBack={() => setAppState("selector")}
+                onHangUp={handleCallFinished}
+              />
+            )}
 
-          {appState === "rewards" && activeCharacter && (
-            <RewardsPanel
-              character={activeCharacter}
-              score={lastScore}
-              passed={lastPassed}
-              transcript={lastTranscript}
-              onDone={() => setAppState("selector")}
-            />
-          )}
+            {appState === "rewards" && activeCharacter && (
+              <RewardsPanel
+                character={activeCharacter}
+                score={lastScore}
+                passed={lastPassed}
+                transcript={lastTranscript}
+                onDone={() => setAppState("selector")}
+              />
+            )}
+          </Suspense>
         </div>
       )}
     </main>

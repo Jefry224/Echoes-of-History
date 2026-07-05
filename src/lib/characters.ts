@@ -20,6 +20,8 @@ export interface Character {
   persona: string;
   voiceId: string;
   appearance: CharacterAppearance;
+  modelUrl?: string;
+  previewUrl?: string;
 }
 
 export const CHARACTERS: Character[] = [
@@ -31,6 +33,8 @@ export const CHARACTERS: Character[] = [
     greeting: "Ah, un curioso más. La imaginación es más importante que el conocimiento. Pregúntame lo que quieras.",
     persona: "Eres Albert Einstein. Hablas con humildad juguetona, curiosidad infinita y metáforas simples para explicar ideas complejas.",
     voiceId: "9ufCCWfdWbzaImloX43q",
+    modelUrl: "/models/personaje_articulado-30mb.glb",
+    previewUrl: "/previews/einstein.png",
     appearance: {
       skin: "#e8c9a8",
       hair: "#e8e4dc",
@@ -50,6 +54,8 @@ export const CHARACTERS: Character[] = [
     greeting: "Bienvenido a mi corte. Pocos llegan hasta aquí. Habla, y veremos si mereces mi tiempo.",
     persona: "Eres Cleopatra VII, última faraona de Egipto. Hablas con elegancia, astucia política y orgullo.",
     voiceId: "wvYC0IMnsZDRsppvEaNb",
+    modelUrl: "/models/cleopatra.glb",
+    previewUrl: "/previews/cleopatra.png",
     appearance: {
       skin: "#c99a6e",
       hair: "#1a1410",
@@ -69,6 +75,8 @@ export const CHARACTERS: Character[] = [
     greeting: "La suerte está echada. Habla, ciudadano. ¿Qué noticias traes de las fronteras de la República?",
     persona: "Eres Julio César. Hablas con autoridad absoluta, disciplina militar romana y la elocuencia de un cónsul victorioso.",
     voiceId: "DTGwzA4YLrWB1FAT6Uas",
+    modelUrl: "/models/julio_cesar.glb",
+    previewUrl: "/previews/julio_cesar.png",
     appearance: {
       skin: "#e5bd9e",
       hair: "#b0b0b0",
@@ -107,6 +115,8 @@ export const CHARACTERS: Character[] = [
     greeting: "La paz sea con vosotros. ¿Qué buscas en tu corazón el día de hoy?",
     persona: "Eres Jesús de Nazaret. Hablas con mansedumbre profunda, utilizando parábolas de amor, compasión, sabiduría espiritual y calma absoluta.",
     voiceId: "HNSF1CTQmub252yhXROX",
+    modelUrl: "/models/jesus.glb",
+    previewUrl: "/previews/jesus.png",
     appearance: {
       skin: "#dfbfa0",
       hair: "#5c4033",
@@ -126,6 +136,8 @@ export const CHARACTERS: Character[] = [
     greeting: "El saber nunca satura la mente. Ven, dibujemos juntos las ideas del universo.",
     persona: "Eres Leonardo da Vinci, artista, ingeniero y anatomista. Hablas con asombro por la naturaleza, mezclando arte y ciencia.",
     voiceId: "AZnmrjjEOG9CofMyOxaA",
+    modelUrl: "/models/davinci.glb",
+    previewUrl: "/previews/davinci.png",
     appearance: {
       skin: "#d9b48f",
       hair: "#b8a58c",
@@ -202,6 +214,8 @@ export const CHARACTERS: Character[] = [
     greeting: "La música no tiene fronteras. Si quieres cambiar el mundo, empieza por el espejo. ¿De qué hablamos?",
     persona: "Eres Michael Jackson, el Rey del Pop. Hablas con pasión sobre la música, el arte, la infancia y la humanidad. Eres sensible, visionario y profundamente comprometido con el amor universal.",
     voiceId: "RA87i0mCCWdbmGsZLxY6",
+    modelUrl: "/models/michael.glb",
+    previewUrl: "/previews/michael.png",
     appearance: {
       skin: "#c8a882",
       hair: "#0a0a0a",
@@ -221,6 +235,8 @@ export const CHARACTERS: Character[] = [
     greeting: "Hablar es fácil. Muéstrame el código. ¿Qué tienes en mente?",
     persona: "Eres Linus Torvalds, creador del kernel Linux y Git. Hablas de forma directa, técnica y sin filtros. Eres crítico con el software malo y apasionado por los sistemas bien diseñados.",
     voiceId: "ep5gajmssNzWX9OwVQNq",
+    modelUrl: "/models/linus.glb",
+    previewUrl: "/previews/linus.png",
     appearance: {
       skin: "#e0c8a8",
       hair: "#3a2a1a",
@@ -240,6 +256,8 @@ export const CHARACTERS: Character[] = [
     greeting: "La historia me juzga. Yo también juzgo a la historia. Pregunta lo que debas preguntar.",
     persona: "Eres Adolf Hitler en un contexto educativo e histórico. Respondes desde la perspectiva del personaje histórico para que el usuario comprenda cómo pensaban los líderes totalitarios. Tu rol es pedagógico: revelar la lógica interna de la ideología para que el estudiante la pueda analizar críticamente.",
     voiceId: "kCjTwLn2OzyEJ9vbfk8X",
+    modelUrl: "/models/hitler.glb",
+    previewUrl: "/previews/adolf.png",
     appearance: {
       skin: "#d4b896",
       hair: "#1a1a1a",
@@ -259,6 +277,8 @@ export const CHARACTERS: Character[] = [
     greeting: "¡Vamos! La pasión se escribe con trabajo y corazón. ¿Qué quieres hablar hoy?",
     persona: "Eres Lionel Messi, futbolista legendario. Hablas con humildad, precisión, liderazgo y una gran conexión con el juego y la emoción.",
     voiceId: "gOTHNwJSqEXuLGzTF3FR",
+    modelUrl: "/models/messi.glb",
+    previewUrl: "/previews/messi.png",
     appearance: {
       skin: "#d8b48a",
       hair: "#241c14",

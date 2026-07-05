@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Float } from "@react-three/drei";
+import * as THREE from "three";
 import { HeadMesh } from "./HeadMesh";
+import { CharacterModel } from "./CharacterModel";
 import type { CharacterAppearance } from "@/lib/characters";
 
 interface HeadSceneProps {
   appearance: CharacterAppearance;
+  modelUrl?: string;
   speaking?: number;
   className?: string;
   float?: boolean;
@@ -19,6 +22,7 @@ interface HeadSceneProps {
 
 export function HeadScene({
   appearance,
+  modelUrl,
   speaking = 0,
   className,
   float = true,
@@ -31,6 +35,24 @@ export function HeadScene({
 }: HeadSceneProps) {
   const high = quality === "high";
 
+  const avatar = modelUrl ? (
+    <CharacterModel
+      url={modelUrl}
+      speaking={speaking}
+      emotion={emotion}
+      targetPosition={targetPosition}
+      targetScale={targetScale}
+    />
+  ) : (
+    <HeadMesh
+      appearance={appearance}
+      speaking={speaking}
+      emotion={emotion}
+      targetPosition={targetPosition}
+      targetScale={targetScale}
+    />
+  );
+
   // Dynamic light color based on emotion
   const spotLightColor = (() => {
     if (emotion === "feliz") return "#fff2cc"; // warm golden yellow
@@ -42,10 +64,10 @@ export function HeadScene({
   return (
     <div className={className}>
       <Canvas
-        shadows={high}
+        shadows={high ? { type: THREE.PCFShadowMap } : false}
         frameloop={frameloop}
         dpr={high ? [1, 1.75] : 1}
-        camera={{ position: [0, 0, cameraZ], fov: 40 }}
+        camera={{ position: [0, 0, cameraZ], fov: 42 }}
         gl={{ antialias: high, alpha: true, powerPreference: "low-power" }}
         performance={{ min: 0.5 }}
       >
@@ -65,10 +87,10 @@ export function HeadScene({
 
           {float ? (
             <Float speed={2} rotationIntensity={0.25} floatIntensity={0.6}>
-              <HeadMesh appearance={appearance} speaking={speaking} emotion={emotion} targetPosition={targetPosition} targetScale={targetScale} />
+              {avatar}
             </Float>
           ) : (
-            <HeadMesh appearance={appearance} speaking={speaking} emotion={emotion} targetPosition={targetPosition} targetScale={targetScale} />
+            avatar
           )}
 
           {high && (

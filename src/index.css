@@ -62,6 +62,16 @@ body {
   }
 }
 
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
 /* Glassmorphism panel */
 .glass-panel {
   background: rgba(10, 10, 10, 0.6);

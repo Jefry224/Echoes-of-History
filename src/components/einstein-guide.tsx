@@ -114,6 +114,7 @@ export function EinsteinGuide() {
     >
       <HeadScene
         appearance={EINSTEIN.appearance}
+        modelUrl={EINSTEIN.modelUrl}
         className="w-full h-full"
         cameraZ={4.2}
         float={ratio > 0.15} // float breath sway when guide is wandering
