@@ -30,6 +30,26 @@ export function RewardsPanel({ character, score, passed, transcript, onDone }: R
 
       const utterance = new SpeechSynthesisUtterance(congratsText);
       utterance.lang = "es-ES";
+
+      // Prevent garbage collection by keeping reference on window
+      (window as any)._activeUtterances = (window as any)._activeUtterances || [];
+      (window as any)._activeUtterances.push(utterance);
+
+      const removeUtterance = () => {
+        if ((window as any)._activeUtterances) {
+          (window as any)._activeUtterances = (window as any)._activeUtterances.filter(
+            (u: any) => u !== utterance
+          );
+        }
+      };
+
+      utterance.onend = () => {
+        removeUtterance();
+      };
+      utterance.onerror = () => {
+        removeUtterance();
+      };
+
       window.speechSynthesis.speak(utterance);
     }
   }, [passed, character, userName, voicePlayed]);

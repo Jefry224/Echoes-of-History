@@ -152,13 +152,27 @@ export function useVoiceConversation(character: Character, mode: "casual" | "mis
         const utterance = new SpeechSynthesisUtterance(fallbackText);
         utterance.lang = "es-ES";
 
+        // Prevent garbage collection by keeping reference on window
+        (window as any)._activeUtterances = (window as any)._activeUtterances || [];
+        (window as any)._activeUtterances.push(utterance);
+
+        const removeUtterance = () => {
+          if ((window as any)._activeUtterances) {
+            (window as any)._activeUtterances = (window as any)._activeUtterances.filter(
+              (u: any) => u !== utterance
+            );
+          }
+        };
+
         utterance.onend = () => {
+          removeUtterance();
           if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
           setSpeakingLevel(0);
           setStatus("idle");
         };
 
         utterance.onerror = () => {
+          removeUtterance();
           if (speakingIntervalRef.current) clearInterval(speakingIntervalRef.current);
           setSpeakingLevel(0);
           setStatus("idle");

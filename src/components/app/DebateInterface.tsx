@@ -250,17 +250,31 @@ No incluyas explicaciones ni bloques de código markdown extra, solo devuelve el
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = "es-ES";
+
+          // Prevent garbage collection by keeping reference on window
+          (window as any)._activeUtterances = (window as any)._activeUtterances || [];
+          (window as any)._activeUtterances.push(utterance);
+
+          const removeUtterance = () => {
+            if ((window as any)._activeUtterances) {
+              (window as any)._activeUtterances = (window as any)._activeUtterances.filter(
+                (u: any) => u !== utterance
+              );
+            }
+          };
           
           utterance.onstart = () => {
             triggerStartPlayback();
           };
 
           utterance.onend = () => {
+            removeUtterance();
             cleanup();
             resolve();
           };
           
           utterance.onerror = () => {
+            removeUtterance();
             triggerStartPlayback();
             cleanup();
             resolve();
